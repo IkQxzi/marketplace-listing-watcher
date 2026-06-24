@@ -1,13 +1,13 @@
 from pathlib import Path
 
 # Up 2 levels
-ROOT_DIR = Path(__file__).resolve().parent.parent.parent
+ROOT_DIR = Path.cwd()   
 
 # dirs
 CONFIG_DIR = ROOT_DIR / "configs"
 LOG_DIR = ROOT_DIR / "logs"
 SOLD_DIR = LOG_DIR / "sold"
-ACTIVE_DIR = LOG_DIR / "active"
+ACTIVE_DIR = LOG_DIR / "active" # /search/catId_catName
 ENV_PATH = ROOT_DIR / "used.env"
 
 # temp dirs

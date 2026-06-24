@@ -28,15 +28,14 @@ def test_search():
     access_token = get_access_token(refresh_token, app_id, cert_id)
 
 
-    item = 'iphone 17 case'
+    item = 'iphone 16 case'
     category_id = 0
     limit = 200
-    log_response = False
-    category_name = 'phones'
+    log_response = True
 
     print(f"Searching for: '{item}'\n")
 
-    r_json = search_item(access_token, item, limit, category_id, log_response, category_name)
+    r_json = search_item(access_token, item, limit, category_id, log_response)
     # pprint(r_json)
 
     item_summaries = r_json['itemSummaries']
@@ -45,7 +44,7 @@ def test_search():
 
 def main():
 
-    pass
+    test_search()
 
 
 if __name__ == '__main__':
