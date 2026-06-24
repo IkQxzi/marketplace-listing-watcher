@@ -1,0 +1,7 @@
+.vscode/
+.idea/
+.obsidian/
+**/__pycache__/
+experiments/
+*.env
+temp_logs/
