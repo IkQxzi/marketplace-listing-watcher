@@ -6,8 +6,11 @@ import os
 import requests
 
 from api.auth import get_refresh_token, get_access_token
-from utils.config import ENV_PATH
 from api import search_item
+from webscraper.scraper import get_item_resp
+from utils.config import ENV_PATH, TEMP_ACTIVE_DIR
+from utils.io import get_latest_search_json
+from stats.analysis import do_stats
 
 
 def load_env_vars():
@@ -20,7 +23,7 @@ def load_env_vars():
     return app_id, cert_id, refresh_token
 
 
-def test_search():
+def search_test():
 
 
     app_id, cert_id, refresh_token = load_env_vars()
@@ -42,10 +45,19 @@ def test_search():
     print(f'\nNo. of items: {len(item_summaries)}')
 
 
+def stats_test():
+
+    data_file = get_latest_search_json(TEMP_ACTIVE_DIR, 'iphone 17')
+    do_stats(data_file)
+
+
+def scraper_test():
+
+    print(get_item_resp('lg g5 55 inch'))
+
+
 def main():
-
-    test_search()
-
+    scraper_test()
 
 if __name__ == '__main__':
     main() 

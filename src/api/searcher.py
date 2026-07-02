@@ -9,20 +9,17 @@ import json
 from collections import Counter, defaultdict
 
 from utils.config import SEARCH_URL, TEMP_ACTIVE_DIR
+from utils.misc import get_timestamp
+from utils.io import log_file
 
-def _log_response(r_json, save_dir: str, item_name: str) -> None:
+def _log_response(r_json, item_name: str, cat_counts: Counter, cat_mappings: defaultdict) -> None:
     '''Log API response to two files: one for item summaries, one for metadata, using category counts as file names.'''
     
-    
-    item_dir = f"{TEMP_ACTIVE_DIR}\\{save_dir}\\{item_name}"
+    cat_id = cat_counts.most_common(1)[0][0]
+    cat_name = cat_mappings[cat_id]
 
-    if not os.path.exists(item_dir):
-        # Instead of mkdir, jic category does not exist yet
-        os.makedirs(item_dir)
-
-    timestamp = time.strftime('%Y-%m-%d_%H.%M')
-    with open(f'{item_dir}\\{timestamp}.json', 'w') as f:
-        json.dump(r_json, f, indent=4)
+    item_dir = f"{TEMP_ACTIVE_DIR}\\{cat_id}_{cat_name}\\{item_name}"
+    log_file(r_json, item_dir, is_json=True)
 
 
 def _parse_categories(item_summaries: list[dict]) -> tuple[Counter, defaultdict]:
@@ -48,6 +45,7 @@ def _parse_categories(item_summaries: list[dict]) -> tuple[Counter, defaultdict]
 
 def search_item(access_token: str, item_name: str, limit: int = 50, category_id: int | None = None, 
                 log_response: bool = False):
+    '''Query for an active search and return the JSON response.'''
 
 
     params: dict[str, str | int] = {
@@ -70,25 +68,16 @@ def search_item(access_token: str, item_name: str, limit: int = 50, category_id:
     try:
         item_summaries: list[dict] = r.json()['itemSummaries']
     except KeyError:
-        print(f'KeyError: r_json: {r_json}')
+        print(f'KeyError; r_json: {r_json}')
         exit()
         
-
     cat_counts, cat_mappings = _parse_categories(item_summaries)
-
-    # Counters store tuples
-    most_common_cat_tuple: tuple[str, int] = cat_counts.most_common(1)[0]
     
-    if log_response:
-        
-        cat_id = most_common_cat_tuple[0]
-        cat_name = cat_mappings[cat_id]
+    if log_response:        
+        _log_response(r_json, item_name, cat_counts, cat_mappings)
 
-        save_dir = f'{cat_id}_{cat_name}'
-        _log_response(r_json, save_dir, item_name)
-
+    # debug
     for cat_id, cat_count in cat_counts.most_common():
-
         print(f'{cat_id}/{cat_mappings[cat_id]}: {cat_count}')
 
     return r_json
