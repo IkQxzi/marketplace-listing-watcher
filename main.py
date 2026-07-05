@@ -7,7 +7,7 @@ import requests
 
 from api.auth import get_refresh_token, get_access_token
 from api import search_item
-from webscraper.scraper import get_item_resp
+from webscraper.scraper import get_sold_info
 from utils.config import ENV_PATH, TEMP_ACTIVE_DIR
 from utils.io import get_latest_search_json
 from stats.analysis import do_stats
@@ -19,6 +19,8 @@ def load_env_vars():
     app_id = os.getenv('prd_app_id')
     cert_id = os.getenv('prd_cert_id')
     refresh_token = os.getenv('prd_refresh_token')
+
+    assert app_id and cert_id and refresh_token, "Missing credentials."
 
     return app_id, cert_id, refresh_token
 
@@ -61,7 +63,7 @@ def stats_test():
 
 def scraper_test():
 
-    print(get_item_resp('lg g5 55 inch'))
+    print(get_sold_info('iphone 17', 30))
 
 
 def main():

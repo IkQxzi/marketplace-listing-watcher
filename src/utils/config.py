@@ -17,4 +17,7 @@ TEMP_ACTIVE_DIR = TEMP_LOG_DIR / "active"
 
 # API URLs
 API_URL = "https://api.ebay.com/buy/browse/v1"
-SEARCH_URL = f"{API_URL}/item_summary/search"
+API_SEARCH_URL = f"{API_URL}/item_summary/search"
+
+# Regular URLs
+WEB_SEARCH_URL = "https://www.ebay.co.uk/sch/i.html"
