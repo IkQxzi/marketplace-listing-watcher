@@ -22,9 +22,17 @@ def load_env_vars():
 
     return app_id, cert_id, refresh_token
 
+def load_discord_webhook_url():
+    
+    load_dotenv(ENV_PATH)
+    url = os.getenv("discord_webhook_url")
+
+    return url
+
+def webhook_test():
+    print(load_discord_webhook_url())
 
 def search_test():
-
 
     app_id, cert_id, refresh_token = load_env_vars()
     assert app_id and cert_id and refresh_token 
@@ -58,6 +66,7 @@ def scraper_test():
 
 def main():
     scraper_test()
+    webhook_test()
 
 if __name__ == '__main__':
     main() 
