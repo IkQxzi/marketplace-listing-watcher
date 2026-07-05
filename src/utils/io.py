@@ -14,8 +14,8 @@ def get_latest_search_json(directory: Path, search: str) -> Path:
     return latest_search
 
 
-def log_file(content, directory: str, is_json = False) -> None:
-    '''Log a file to a directory, with the filename being a timestamp.'''
+def log_to_file(content, directory: str, is_json = False) -> None:
+    '''Log content to a directory, with the filename being a timestamp.'''
 
     if not os.path.exists(directory):
         os.makedirs(directory)

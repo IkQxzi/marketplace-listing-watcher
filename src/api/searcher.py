@@ -8,9 +8,9 @@ import time
 import json
 from collections import Counter, defaultdict
 
-from utils.config import SEARCH_URL, TEMP_ACTIVE_DIR
+from utils.config import API_SEARCH_URL, TEMP_ACTIVE_DIR
 from utils.misc import get_timestamp
-from utils.io import log_file
+from utils.io import log_to_file
 
 def _log_response(r_json, item_name: str, cat_counts: Counter, cat_mappings: defaultdict) -> None:
     '''Log API response to two files: one for item summaries, one for metadata, using category counts as file names.'''
@@ -19,7 +19,7 @@ def _log_response(r_json, item_name: str, cat_counts: Counter, cat_mappings: def
     cat_name = cat_mappings[cat_id]
 
     item_dir = f"{TEMP_ACTIVE_DIR}\\{cat_id}_{cat_name}\\{item_name}"
-    log_file(r_json, item_dir, is_json=True)
+    log_to_file(r_json, item_dir, is_json=True)
 
 
 def _parse_categories(item_summaries: list[dict]) -> tuple[Counter, defaultdict]:
@@ -62,7 +62,7 @@ def search_item(access_token: str, item_name: str, limit: int = 50, category_id:
         'Authorization': f'Bearer {access_token}'
     }
 
-    r = requests.get(url=SEARCH_URL, params=params, headers=headers, timeout=10)
+    r = requests.get(url=API_SEARCH_URL, params=params, headers=headers, timeout=10)
     r_json = r.json()
     
     try:
