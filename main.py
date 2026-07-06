@@ -7,7 +7,7 @@ import requests
 
 from api.auth import get_refresh_token, get_access_token
 from api import search_item
-from webscraper.scraper import get_sold_info
+from webscraper.scraper import CamoufoxScaper
 from utils.config import ENV_PATH, TEMP_ACTIVE_DIR
 from utils.io import get_latest_search_json
 from stats.analysis import do_stats
@@ -63,12 +63,13 @@ def stats_test():
 
 def scraper_test():
 
-    print(get_sold_info('iphone 17', 30))
+    scraper = CamoufoxScaper()
+    scraper.get_sold_listings_info('iphone 17', 30)
 
 
 def main():
     scraper_test()
-    webhook_test()
+    # webhook_test()
 
 if __name__ == '__main__':
     main() 
