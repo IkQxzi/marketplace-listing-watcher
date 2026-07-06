@@ -8,5 +8,6 @@ dependencies = [
     "curl_cffi",
     "pandas",
     "python-dotenv",
-    "requests"
+    "requests",
+    "camoufox[geoip]",
 ]

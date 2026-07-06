@@ -63,8 +63,8 @@ def stats_test():
 
 def scraper_test():
 
-    scraper = CamoufoxScaper()
-    scraper.get_sold_listings_info('iphone 17', 30)
+    scraper = CamoufoxScaper(False, False, True)
+    scraper.get_sold_listings_info("iphone 17", "new", 30)
 
 
 def main():
