@@ -7,7 +7,7 @@ import requests
 
 from api.auth import get_refresh_token, get_access_token
 from api import search_item
-from webscraper.scraper import CamoufoxScaper
+from webscraper.scraper import CamoufoxScraper
 from utils.config import ENV_PATH, TEMP_ACTIVE_DIR
 from utils.io import get_latest_search_json
 from stats.analysis import do_stats
@@ -63,7 +63,7 @@ def stats_test():
 
 def scraper_test():
 
-    scraper = CamoufoxScaper(headless=True)
+    scraper = CamoufoxScraper(headless=True)
     scraper.get_sold_listings_info('iphone 16', 'new')
 
 
@@ -72,7 +72,7 @@ def html_test():
     # To prevent having to scrape many times for testing
     html_file = r"D:\Coding\ebaymk2\temp_logs\html\2026-07-06_01.28.html"
 
-    scraper = CamoufoxScaper(headless=True, save_html=False)
+    scraper = CamoufoxScraper(headless=True, save_html=False)
     
     with open(html_file, 'r') as f:
         scraper._parse_sold_listings_html(f)
