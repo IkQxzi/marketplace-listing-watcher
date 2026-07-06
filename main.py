@@ -63,12 +63,22 @@ def stats_test():
 
 def scraper_test():
 
-    scraper = CamoufoxScaper()
-    scraper.get_sold_listings_info('iphone 17', 30)
+    scraper = CamoufoxScaper(headless=True)
+    scraper.get_sold_listings_info('iphone 16', 'new')
 
+
+def html_test():
+
+    # To prevent having to scrape many times for testing
+    html_file = r"D:\Coding\ebaymk2\temp_logs\html\2026-07-06_01.28.html"
+
+    scraper = CamoufoxScaper(headless=True, save_html=False)
+    
+    with open(html_file, 'r') as f:
+        scraper._parse_sold_listings_html(f)
 
 def main():
-    scraper_test()
+    html_test()
     # webhook_test()
 
 if __name__ == '__main__':
