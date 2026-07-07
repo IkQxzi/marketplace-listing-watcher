@@ -19,7 +19,7 @@ def _log_response(r_json, item_name: str, cat_counts: Counter, cat_mappings: def
     cat_name = cat_mappings[cat_id]
 
     item_dir = f"{TEMP_ACTIVE_DIR}\\{cat_id}_{cat_name}\\{item_name}"
-    write_to_dir(r_json, item_dir, is_json=True)
+    write_to_dir(r_json, item_dir, file_ext='json')
 
 
 def _parse_categories(item_summaries: list[dict]) -> tuple[Counter, defaultdict]:

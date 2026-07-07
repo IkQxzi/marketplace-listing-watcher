@@ -65,7 +65,7 @@ def stats_test():
 def scraper_test():
 
     scraper = CamoufoxScraper()
-    scraper.get_sold_listings_info("iphone 16", "new", 30)
+    scraper.get_sold_listings_info(item="iphone 16", condition="new")
 
 
 def html_test():

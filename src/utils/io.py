@@ -28,9 +28,9 @@ def _confirm_dir_exists(directory: str) -> None:
         os.makedirs(directory)
 
 
-def write_to_dir(content, directory: str, is_json = False) -> None:
+def write_to_dir(content, directory: str, file_ext: str) -> None:
     '''
-    Log content to a directory, with the filename being a timestamp.
+    Log content to a directory, with the filename being a timestamp ending in specified file extension.\n
     Creates directory if it does not exist.
     '''
 
@@ -38,12 +38,16 @@ def write_to_dir(content, directory: str, is_json = False) -> None:
 
     file_path = f'{directory}/{get_timestamp()}'
 
-    if is_json:
-        with open(f'{file_path}.json', 'w', encoding='utf-8') as f:
+    # Ensure no dot in ext
+    if file_ext[0] == '.':
+        file_ext = file_ext[1:]
+
+    if file_ext == 'json':
+        with open(f'{file_path}.{file_ext}', 'w', encoding='utf-8') as f:
             json.dump(content, f, indent=4)
         return
     
-    with open(f'{file_path}.txt', 'w', encoding='utf-8') as f:
+    with open(f'{file_path}.{file_ext}', 'w', encoding='utf-8') as f:
         f.write(content)
     
     return
