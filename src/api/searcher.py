@@ -10,7 +10,7 @@ from collections import Counter, defaultdict
 
 from utils.config import API_SEARCH_URL, TEMP_ACTIVE_DIR
 from utils.misc import get_timestamp
-from utils.io import log_to_file
+from utils.io import write_to_dir
 
 def _log_response(r_json, item_name: str, cat_counts: Counter, cat_mappings: defaultdict) -> None:
     '''Log API response to two files: one for item summaries, one for metadata, using category counts as file names.'''
@@ -19,7 +19,7 @@ def _log_response(r_json, item_name: str, cat_counts: Counter, cat_mappings: def
     cat_name = cat_mappings[cat_id]
 
     item_dir = f"{TEMP_ACTIVE_DIR}\\{cat_id}_{cat_name}\\{item_name}"
-    log_to_file(r_json, item_dir, is_json=True)
+    write_to_dir(r_json, item_dir, is_json=True)
 
 
 def _parse_categories(item_summaries: list[dict]) -> tuple[Counter, defaultdict]:

@@ -1,6 +1,7 @@
 from bs4 import BeautifulSoup
 from pprint import pprint
 
+from pathlib import Path
 from dotenv import load_dotenv
 import os
 import requests
@@ -63,22 +64,22 @@ def stats_test():
 
 def scraper_test():
 
-    scraper = CamoufoxScaper(False, False, True)
+    scraper = CamoufoxScraper()
     scraper.get_sold_listings_info("iphone 17", "new", 30)
 
 
 def html_test():
 
     # To prevent having to scrape many times for testing
-    html_file = r"D:\Coding\ebaymk2\temp_logs\html\2026-07-06_01.28.html"
+    html_file = rf"{Path.cwd()}/temp_logs/html/2026-07-06_01.28.html"
 
-    scraper = CamoufoxScraper(headless=True, save_html=False)
+    scraper = CamoufoxScraper(save_df=False)
     
     with open(html_file, 'r') as f:
         scraper._parse_sold_listings_html(f)
 
 def main():
-    html_test()
+    scraper_test()
     # webhook_test()
 
 if __name__ == '__main__':
