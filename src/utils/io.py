@@ -1,3 +1,10 @@
+'''
+Universal I/O functions.
+Note that utf-8 encoding is required to support emojis.
+'''
+
+from pandas import DataFrame
+
 from pathlib import Path
 import os
 import json
@@ -14,22 +21,37 @@ def get_latest_search_json(directory: Path, search: str) -> Path:
     return latest_search
 
 
-def log_to_file(content, directory: str, is_json = False) -> None:
-    '''Log content to a directory, with the filename being a timestamp.'''
+def _confirm_dir_exists(directory: str) -> None:
+    '''Create a directory if it does not exist, otherwise do nothing.'''
 
     if not os.path.exists(directory):
         os.makedirs(directory)
 
-    timestamp = get_timestamp()
-    file_path = f'{directory}/{timestamp}'
+
+def write_to_dir(content, directory: str, is_json = False) -> None:
+    '''
+    Log content to a directory, with the filename being a timestamp.
+    Creates directory if it does not exist.
+    '''
+
+    _confirm_dir_exists(directory)
+
+    file_path = f'{directory}/{get_timestamp()}'
 
     if is_json:
-        with open(f'{file_path}.json', 'w') as f:
+        with open(f'{file_path}.json', 'w', encoding='utf-8') as f:
             json.dump(content, f, indent=4)
         return
     
-    with open(f'{file_path}.txt', 'w') as f:
+    with open(f'{file_path}.txt', 'w', encoding='utf-8') as f:
         f.write(content)
     
     return
         
+
+def write_df_to_dir(df: DataFrame, directory: str) -> None:
+
+    _confirm_dir_exists(directory)
+
+    df_path = f"{directory}/{get_timestamp()}.csv" 
+    df.to_csv(df_path)
