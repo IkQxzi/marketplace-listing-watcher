@@ -65,7 +65,7 @@ def stats_test():
 def scraper_test():
 
     scraper = CamoufoxScraper()
-    scraper.get_sold_listings_info("iphone 17", "new", 30)
+    scraper.get_sold_listings_info("iphone 16", "new", 30)
 
 
 def html_test():
@@ -76,6 +76,7 @@ def html_test():
     scraper = CamoufoxScraper(save_df=False)
     
     with open(html_file, 'r') as f:
+        # Bit dodgy but can technically use HTML files instead of strings
         scraper._parse_sold_listings_html(f)
 
 def main():
