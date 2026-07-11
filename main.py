@@ -73,8 +73,8 @@ def scraper_test():
 def html_test():
 
     parser = ListingParser()
-
-    df = parser.parse_sold_listings_html(item_name = TEMP_HTML_PATH)
+    ListingParser()
+    
 
 def main():
     scraper_test()
