@@ -41,7 +41,9 @@ def write_to_dir(content, directory: str, file_ext: str) -> None:
     # Ensure no dot in ext
     if file_ext[0] == '.':
         file_ext = file_ext[1:]
-
+    
+    print(f'Saving file to {file_path}.{file_ext}')
+    
     if file_ext == 'json':
         with open(f'{file_path}.{file_ext}', 'w', encoding='utf-8') as f:
             json.dump(content, f, indent=4)
@@ -59,3 +61,5 @@ def write_df_to_dir(df: DataFrame, directory: str) -> None:
 
     df_path = f"{directory}/{get_timestamp()}.csv" 
     df.to_csv(df_path)
+
+    print(f'Saved df to path: {df_path}')
