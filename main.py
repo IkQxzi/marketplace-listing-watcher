@@ -73,11 +73,12 @@ def scraper_test():
 def html_test():
 
     parser = ListingParser()
-    ListingParser()
+    df = parser.parse_sold_listings_html(item_name='iphone 17', html=TEMP_HTML_PATH)
+
     
 
 def main():
-    scraper_test()
+    html_test()
     # webhook_test()
 
 if __name__ == '__main__':
