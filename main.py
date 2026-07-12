@@ -8,8 +8,8 @@ import requests
 
 from api.auth import get_refresh_token, get_access_token
 from api import search_item
-from webscraper.scraper import CamoufoxScraper
-from utils.config import ENV_PATH, TEMP_ACTIVE_DIR
+from webscraper.scraper import ListingScraper, ListingParser
+from utils.config import ENV_PATH, TEMP_ACTIVE_DIR, TEMP_HTML_PATH
 from utils.io import get_latest_search_json
 from stats.analysis import do_stats
 
@@ -64,23 +64,21 @@ def stats_test():
 
 def scraper_test():
 
-    scraper = CamoufoxScraper()
+    raise NotImplementedError
+
+    scraper = CamoufoxScraper(headless=False)
     scraper.get_sold_listings_info(item="iphone 16", condition="new")
 
 
 def html_test():
 
-    # To prevent having to scrape many times for testing
-    html_file = rf"{Path.cwd()}/temp_logs/html/2026-07-06_01.28.html"
+    parser = ListingParser()
+    df = parser.parse_sold_listings_html(item_name='iphone 17', html=TEMP_HTML_PATH)
 
-    scraper = CamoufoxScraper(save_df=False)
     
-    with open(html_file, 'r') as f:
-        # Bit dodgy but can technically use HTML files instead of strings
-        scraper._parse_sold_listings_html(f)
 
 def main():
-    scraper_test()
+    html_test()
     # webhook_test()
 
 if __name__ == '__main__':
