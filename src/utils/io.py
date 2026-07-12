@@ -53,7 +53,7 @@ def write_to_dir(content: str, dir: Path, file_ext: str) -> None:
 
     # Create file
     dir.parent.mkdir(parents=True, exist_ok=True)
-    file_path = dir.with_suffix(file_ext)
+    file_path = (dir / get_timestamp()).with_suffix(file_ext)
 
     print(f'Writing to file: {str(file_path)}')
 
