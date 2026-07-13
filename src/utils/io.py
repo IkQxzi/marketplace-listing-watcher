@@ -53,7 +53,7 @@ def write_to_dir(content: str, dir: Path, file_ext: str) -> None:
 
     # Create file
     dir.parent.mkdir(parents=True, exist_ok=True)
-    file_path = dir.with_suffix(file_ext)
+    file_path = (dir / get_timestamp()).with_suffix(file_ext)
 
     print(f'Writing to file: {str(file_path)}')
 
@@ -71,10 +71,7 @@ def write_df_to_dir(df: DataFrame, dir: Path) -> None:
     '''Write df to directory, creating dir if it does not exist.'''
 
     dir.mkdir(parents=True, exist_ok=True)
-
-    # To prevent the seconds     
-    df_path_str = str(dir / get_timestamp()) + '.csv'
-    df_path = Path(df_path_str)
+    df_path = (dir / get_timestamp()).with_suffix('.csv') 
 
     df.to_csv(df_path)
 
