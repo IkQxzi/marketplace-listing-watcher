@@ -90,15 +90,8 @@ def write_df_to_dir(df: DataFrame, dir: Path) -> None:
     print(f'Saved df to path: {df_path}')
 
 
-def get_file_names_in_dir(directory:str) -> list:
-    filenames = []
-
-    dt = Path(directory)
-    for file in dt.iterdir():
-        if file.is_file():
-            filenames.append(file.name)
-
-    return filenames
+def get_file_names_in_dir(dir: Path) -> list[str]:
+	return [item for item in dir.iterdir() if item.is_file()]
 
 def read_multiple_df(directory:str) -> DataFrame:
     '''Takes all the CSVs in a directory and returns as one DataFrame.'''

@@ -12,6 +12,10 @@ dependencies = [
     "requests",
     "camoufox[geoip]",
     "click",
+    "jupyter",
+    "ipykernel",
+    "requests",
+    "pandas"
 ]
 
 [project.scripts]
