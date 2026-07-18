@@ -12,7 +12,12 @@
 	- [x] Find out if `curl_cffi` is required, or if `requests` is sufficient
 	- Using CamouFox
 	- Could use some scraper API
- - [ ] Learn how to use Pandas from JSON files
+ - [ ] Stats/analysis
+	 - [x] Create df
+	 - [ ] Clean df
+		 - First 2 seem to not contain any data
+		 - Saving creates index; reading does not use it
+		 - [ ] Use `.parquet` file format after testing complete
  - [x] Check if eBay feed data (hourly data dump) is available
 	 - Invite-only
  - [ ] Checkout Terapeak (visual, not API sold data)
