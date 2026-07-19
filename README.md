@@ -14,10 +14,13 @@
 	- Using CamouFox
 	- Could use some scraper API
  - [ ] Stats/analysis
+	 - [ ] Consider using OOP
+	 - [ ] Consider splitting into different files (`cleaning.py`, `visualisation.py`, etc.)
 	 - [x] Create df
 	 - [ ] Clean df
-		 - First 2 seem to not contain any data
-		 - Saving creates index; reading does not use it
+		 - [x] Remove first 2 (seem to not contain any data)
+		 - [ ] Filter names
+	 - [x] FIX: Saving creates index; reading does not use it
 		 - [ ] Use `.parquet` file format after testing complete
  - [x] Check if eBay feed data (hourly data dump) is available
 	 - Invite-only
