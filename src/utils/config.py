@@ -4,7 +4,7 @@ import os
 
 
 # Up 2 levels
-ROOT_DIR = Path.cwd()   
+ROOT_DIR = Path(__file__)
 
 # dirs
 CONFIG_DIR = ROOT_DIR / "configs"
