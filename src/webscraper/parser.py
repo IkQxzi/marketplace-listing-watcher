@@ -18,6 +18,7 @@ class ListingParser:
         self.save_pretty_html = save_pretty_html
 
     # TODO: Use more robust parsing
+    # TODO: fix how shipping price is extracted, number is way too high 
     # And repeat request until elements found
     def parse_sold_listings_html(self, item_name: str | None,
                                   html: str | Path) -> pd.DataFrame:
