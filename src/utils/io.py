@@ -3,7 +3,7 @@ Universal I/O functions.
 Note that utf-8 encoding is required to support emojis.
 '''
 
-from pandas import DataFrame
+from pandas import DataFrame, read_csv
 
 import json
 from pathlib import Path
@@ -39,6 +39,15 @@ def get_latest_search_json(directory: Path, search: str) -> Path:
     latest_search = max(f for f in search_json_gen)
     
     return latest_search
+
+
+def read_df_from_path(data_file: Path) -> DataFrame:
+    '''Read df from a file, assuming first col. is index'''
+    
+    with data_file.open('r', encoding='utf-8') as f:
+        df = read_csv(f, index_col=0)
+
+    return df
 
 
 def write_to_dir(content: str, dir: Path, file_ext: str) -> None:

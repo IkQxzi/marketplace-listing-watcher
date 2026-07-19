@@ -1,5 +1,6 @@
 ### Todo
 ***
+- [ ] Get more csv files for testing
 - [x] Check if no category ID and 0 are the same
 	- [x] Get category IDs
 - [ ] Rewrite category ID counter and map
