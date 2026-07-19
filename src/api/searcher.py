@@ -1,18 +1,14 @@
+'''Polling API for active listings.'''
 
-from pprint import pprint
-from bs4 import BeautifulSoup
-
-import os
 import requests
-import time
-import json
 from collections import Counter, defaultdict
+from pathlib import Path
 
 from utils.config import API_SEARCH_URL, TEMP_ACTIVE_DIR
 from utils.misc import get_timestamp
 from utils.io import write_to_dir, generate_log_path
 
-def _log_response(r_json, item_name: str, cat_counts: Counter, cat_mappings: defaultdict) -> None:
+def _log_response(r_json, item_name: str, cat_counts: Counter, cat_mappings: defaultdict, active_dir: Path) -> None:
     '''Log API response to two files: one for item summaries, one for metadata, using category counts as file names.'''
     
     cat_id = cat_counts.most_common(1)[0][0]

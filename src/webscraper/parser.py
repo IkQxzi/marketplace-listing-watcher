@@ -5,14 +5,14 @@ from bs4 import BeautifulSoup, Tag
 
 from pathlib import Path
 
-from utils.config import TEMP_LOG_DIR
+from utils.config import LOG_DIR
 from utils.io import generate_log_path, write_to_dir, write_df_to_dir
 
 
 
 class ListingParser:
 
-    def __init__(self, save_df=True, save_pretty_html=True, log_dir: Path=TEMP_LOG_DIR) -> None:
+    def __init__(self, save_df=True, save_pretty_html=True, log_dir: Path=LOG_DIR) -> None:
         self.log_dir = log_dir
         self.save_df = save_df
         self.save_pretty_html = save_pretty_html

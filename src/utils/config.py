@@ -17,7 +17,7 @@ ENV_PATH = ROOT_DIR / "used.env"
 load_dotenv(ENV_PATH)
 
 # temp dirs
-temp_html_path_str = os.getenv('test_html_path')
+temp_html_path_str = os.getenv('test_html_path') # Optional for testing
 if temp_html_path_str:
     TEMP_HTML_PATH = Path(temp_html_path_str)
 TEMP_LOG_DIR = ROOT_DIR / "temp_logs"
