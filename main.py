@@ -12,7 +12,7 @@ from webscraper.scraper import ListingScraper
 from webscraper.parser import ListingParser
 from utils.config import ENV_PATH, TEMP_ACTIVE_DIR, TEMP_HTML_PATH
 from utils.io import get_latest_search_json
-from stats.analysis import do_stats
+from stats.filtering import do_stats
 
 
 def load_env_vars():
