@@ -4,9 +4,10 @@ import requests
 from collections import Counter, defaultdict
 from pathlib import Path
 
-from utils.config import API_SEARCH_URL, TEMP_ACTIVE_DIR
+from utils.config import API_SEARCH_URL, ACTIVE_DIR
 from utils.misc import get_timestamp
 from utils.io import write_to_dir, generate_log_path
+
 
 def _log_response(r_json, item_name: str, cat_counts: Counter, cat_mappings: defaultdict, active_dir: Path) -> None:
     '''Log API response to two files: one for item summaries, one for metadata, using category counts as file names.'''
@@ -15,7 +16,7 @@ def _log_response(r_json, item_name: str, cat_counts: Counter, cat_mappings: def
     cat_name = cat_mappings[cat_id]
 
     item_dir = generate_log_path(
-        TEMP_ACTIVE_DIR, item_name, is_active=True, cat_id=cat_id, cat_name=cat_name)
+        active_dir, item_name, is_active=True, cat_id=cat_id, cat_name=cat_name)
     write_to_dir(r_json, item_dir, file_ext='json')
 
 
@@ -71,7 +72,7 @@ def search_item(access_token: str, item_name: str, limit: int = 50, category_id:
     cat_counts, cat_mappings = _parse_categories(item_summaries)
     
     if log_response:        
-        _log_response(r_json, item_name, cat_counts, cat_mappings)
+        _log_response(r_json, item_name, cat_counts, cat_mappings, ACTIVE_DIR)
 
     # debug
     for cat_id, cat_count in cat_counts.most_common():

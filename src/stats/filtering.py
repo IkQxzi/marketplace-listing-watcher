@@ -14,13 +14,14 @@ def drop_empty_records(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def remove_name_ending_text(df: pd.DataFrame) -> pd.DataFrame:
+def remove_trailing_name_text(df: pd.DataFrame) -> pd.DataFrame:
     '''Clean the "Opens in a new window or tab" text from listing names.'''
 
     trailing_text = "Opens in a new window or tab"
-    df['full_name'] = df['full_name'].str.removesuffix(trailing_text)
 
-    return df
+    return df.assign(
+        full_name= df['full_name'].str.removesuffix(trailing_text)
+    )
 
 
 def keep_records_containing(
