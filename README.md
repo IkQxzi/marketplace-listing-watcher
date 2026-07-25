@@ -1,28 +1,7 @@
-### Todo
-***
-- [ ] Get more csv files for testing
-	- [ ] Manually scrape some html files and convert
-- [x] Check if no category ID and 0 are the same
-	- [x] Get category IDs
-- [ ] Rewrite category ID counter and map
-	- [x] Counter
-	- [ ] Map 
-- [ ] Change category file names to category IDs (or accurate category names?)
-	- [x] Active listings
-	- [ ] Sold listings
-- [x] Get sold listings
-	- [x] Find out if `curl_cffi` is required, or if `requests` is sufficient
-	- Using CamouFox
-	- Could use some scraper API
- - [ ] Stats/analysis
-	 - [ ] Consider using OOP
-	 - [ ] Consider splitting into different files (`cleaning.py`, `visualisation.py`, etc.)
-	 - [x] Create df
-	 - [ ] Clean df
-		 - [x] Remove first 2 (seem to not contain any data)
-		 - [ ] Filter names
-	 - [x] FIX: Saving creates index; reading does not use it
-		 - [ ] Use `.parquet` file format after testing complete
- - [x] Check if eBay feed data (hourly data dump) is available
-	 - Invite-only
- - [ ] Checkout Terapeak (visual, not API sold data)
+### Outline
+---
+This project seeks to automate the 
+### Installation
+---
+- `pip install -e .` to install packages
+- Use Python virtual env 
