@@ -24,6 +24,7 @@ class ListingParser:
                                   html: str | Path) -> pd.DataFrame:
         '''
         Convert html of sold listings page into dataframe and return.
+        Also logs df by default (see __init__ arguments).
         '''
 
         # Try to infer item name from directory structure
