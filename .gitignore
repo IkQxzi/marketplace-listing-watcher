@@ -3,5 +3,17 @@
 .obsidian/
 **/__pycache__/
 experiments/
-*.env
 temp_logs/
+*.env
+
+# Environments
+.venv/
+venv/
+env/
+
+# Python build artifacts
+build/
+dist/
+*.egg-info/
+.eggs/
+*.egg
