@@ -10,9 +10,8 @@ from api.auth import get_refresh_token, get_access_token
 from api import search_item
 from webscraper.scraper import ListingScraper
 from webscraper.parser import ListingParser
-from utils.config import ENV_PATH, TEMP_ACTIVE_DIR, TEMP_HTML_PATH
+from utils.config import ENV_PATH, TEMP_ACTIVE_DIR, TEMP_HTML_PATH, TEMP_LOG_DIR
 from utils.io import get_latest_search_json
-from stats.filtering import do_stats
 
 
 def load_env_vars():
@@ -59,16 +58,16 @@ def search_test():
 
 def stats_test():
 
+    raise NotImplementedError
+
     data_file = get_latest_search_json(TEMP_ACTIVE_DIR, 'iphone 17')
     do_stats(data_file)
 
 
 def scraper_test():
 
-    raise NotImplementedError
-
-    scraper = CamoufoxScraper(headless=False)
-    scraper.get_sold_listings_info(item="iphone 16", condition="new")
+    scraper = ListingScraper(headless=False, log_dir=TEMP_LOG_DIR, use_proxy=True)
+    scraper.get_sold_listings_html(item_name='iphone 14', condition='New')
 
 
 def html_test():
@@ -79,8 +78,7 @@ def html_test():
     
 
 def main():
-    html_test()
-    # webhook_test()
+    scraper_test()
 
 if __name__ == '__main__':
     main()
