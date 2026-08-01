@@ -2,6 +2,8 @@
 
 import pandas as pd
 
+
+
 def drop_empty_records(df: pd.DataFrame) -> pd.DataFrame:
     '''Filter out errored/blank listings (usually the first 2).'''
 
@@ -25,7 +27,7 @@ def remove_trailing_name_text(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def keep_records_containing(
-    df: pd.DataFrame, required_txt: str | None = None, case_sensitive = False
+    df: pd.DataFrame, required_txts: list[str] | None = None, case_sensitive = False
     ) -> pd.DataFrame:
     
     '''
@@ -33,11 +35,14 @@ def keep_records_containing(
     If unspecified, tries to infer from parent directory name.
     '''
 
-    if not required_txt:
+    if not required_txts:
         raise NotImplementedError("Currently, inferring name from parent directory not supported.")
     
-    # Non case-sensitive
-    return df[df['full_name'].str.contains(required_txt, case=case_sensitive)]
+    # Remove sequentially
+    for txt in required_txts:
+        df = df[df['full_name'].str.contains(txt, case=case_sensitive)]
+
+    return df
 
 
 def remove_records_containing(
