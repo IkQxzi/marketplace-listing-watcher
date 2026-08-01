@@ -10,7 +10,7 @@ import pandas as pd
 class FilterConfig:
     required_txts: list[str] | None = None
     req_txts_case_sensitive: bool = False
-    banned_txt: str | None = None
+    banned_txts: list[str] | None = None
     ban_txt_case_sensitive: bool = False
 
 
@@ -60,9 +60,12 @@ def remove_records_containing(
     ) -> pd.DataFrame:
     '''Remove listings containing the banned text.'''
 
-    assert filter_conf.banned_txt, "Banned text not specified in filter config!"
+    assert filter_conf.banned_txts, "Banned texts not specified in filter config!"
 
-    return df[~df['full_name'].str.contains(filter_conf.banned_txt, case=filter_conf.ban_txt_case_sensitive)]
+    for txt in filter_conf.banned_txts:
+        df = df[~df['full_name'].str.contains(txt, case=filter_conf.ban_txt_case_sensitive)]
+
+    return df
 
 
 def clean_listings(df: pd.DataFrame) -> pd.DataFrame:
