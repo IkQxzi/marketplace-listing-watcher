@@ -1,6 +1,18 @@
 '''Filtering listings using various criteria.'''
 
+from dataclasses import dataclass
+
 import pandas as pd
+
+
+
+@dataclass
+class FilterConfig:
+    required_txts: list[str] | None = None
+    req_txts_case_sensitive: bool = False
+    banned_txts: list[str] | None = None
+    ban_txt_case_sensitive: bool = False
+
 
 def drop_empty_records(df: pd.DataFrame) -> pd.DataFrame:
     '''Filter out errored/blank listings (usually the first 2).'''
@@ -25,7 +37,7 @@ def remove_trailing_name_text(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def keep_records_containing(
-    df: pd.DataFrame, required_txt: str | None = None, case_sensitive = False
+    df: pd.DataFrame, filter_conf: FilterConfig,
     ) -> pd.DataFrame:
     
     '''
@@ -33,19 +45,27 @@ def keep_records_containing(
     If unspecified, tries to infer from parent directory name.
     '''
 
-    if not required_txt:
+    if not filter_conf.required_txts:
         raise NotImplementedError("Currently, inferring name from parent directory not supported.")
     
-    # Non case-sensitive
-    return df[df['full_name'].str.contains(required_txt, case=case_sensitive)]
+    # Remove sequentially
+    for txt in filter_conf.required_txts:
+        df = df[df['full_name'].str.contains(txt, case=filter_conf.req_txts_case_sensitive)]
+
+    return df
 
 
 def remove_records_containing(
-    df: pd.DataFrame, banned_txt: str, case_sensitive = False
+    df: pd.DataFrame, filter_conf: FilterConfig,
     ) -> pd.DataFrame:
     '''Remove listings containing the banned text.'''
 
-    return df[~df['full_name'].str.contains(banned_txt, case=case_sensitive)]
+    assert filter_conf.banned_txts, "Banned texts not specified in filter config!"
+
+    for txt in filter_conf.banned_txts:
+        df = df[~df['full_name'].str.contains(txt, case=filter_conf.ban_txt_case_sensitive)]
+
+    return df
 
 
 def clean_listings(df: pd.DataFrame) -> pd.DataFrame:
