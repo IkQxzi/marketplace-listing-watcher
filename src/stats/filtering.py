@@ -42,21 +42,24 @@ def keep_records_containing(
 
 
 def remove_records_containing(
-    df: pd.DataFrame, banned_txt: str, case_sensitive = False
+    df: pd.DataFrame, banned_txt: list, case_sensitive = False
     ) -> pd.DataFrame:
-    '''Remove listings containing the banned text.'''
+    '''Remove listings containing the banned keywords.'''
 
-    return df[~df['full_name'].str.contains(banned_txt, case=case_sensitive)]
+    #generate banned text string from keywords
+    keywords_list = "|".join(banned_txt)
+
+    return df[~df['full_name'].str.contains(keywords_list, case=case_sensitive)]
 
 def filter_by_price(
-    upper_bound:float, lower_bound:float, df:pd.dataFrame
-    ) -> pd.dataFrame:
+    upper_bound:float, lower_bound:float, df:pd.DataFrame
+    ) -> pd.DataFrame:
     '''Remove listings above or below a certain price with specified upper/lower bounds'''
 
     return df[(df["price"] >= lower_bound) & (df["price"] <= upper_bound)]
 
 def filter_by_standard_deviation(
-        df:pd.dataFrame, n:int) -> pd.dataFrame:
+        df:pd.DataFrame, n:int) -> pd.DataFrame:
     '''Remove listings that are n standard deviations away from the mean'''
 
     price_arr = df["price"]
@@ -69,7 +72,7 @@ def filter_by_standard_deviation(
     return df[(df["price"] >= lower_bound) & (df["price"] <= upper_bound)]
 
 def filter_by_percentile(
-        df:pd.dataFrame, lower_percentile:float, upper_percentile:float) -> pd.DataFrame:
+        df:pd.DataFrame, lower_percentile:float, upper_percentile:float) -> pd.DataFrame:
     '''Remove listings that are outside a certain percentile range
     Percentile has to be a decimal e.g. 0,05'''
 
@@ -83,3 +86,4 @@ def clean_listings(df: pd.DataFrame) -> pd.DataFrame:
     '''Call all the cleaning functions.'''
 
     raise NotImplementedError
+
