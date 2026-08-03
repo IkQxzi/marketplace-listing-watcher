@@ -118,10 +118,6 @@ class ListingParser:
 
         parsed_items_df = pd.DataFrame(parsed_items)
 
-        print(rf"{parsed_items[-2]['full_name']}")
-        print(rf"{parsed_items_df.iloc[-2]['full_name']}")
-        print(rf"\t")
-
         if self.save_df:
             dir = generate_log_path(self.log_dir, item_name, is_active=False)
             write_df_to_dir(parsed_items_df, dir)
@@ -135,13 +131,6 @@ class ListingParser:
         '''Get the stripped text of an element if it exists, with fallback.'''
 
         sub_element = element.select_one(classes)
-
-        txt = rf'{sub_element.text}' if sub_element else fallback
-        if 'iPhone 16 Soft Oled Screen' in txt:
-            txt = txt.replace('\t', '')
-            txt = txt.replace('\n', '').strip()
-            print(rf'{txt}')
-
         return rf'{sub_element.text.strip()}' if sub_element else fallback
 
         
