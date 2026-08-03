@@ -12,10 +12,9 @@ from utils.io import generate_log_path, write_to_dir, write_df_to_dir
 
 class ListingParser:
 
-    def __init__(self, save_df=True, save_pretty_html=True, log_dir: Path=LOG_DIR) -> None:
+    def __init__(self, save_df=True, log_dir: Path=LOG_DIR) -> None:
         self.log_dir = log_dir
         self.save_df = save_df
-        self.save_pretty_html = save_pretty_html
 
     # TODO: Use more robust parsing
     # TODO: fix how shipping price is extracted, number is way too high 
@@ -41,11 +40,6 @@ class ListingParser:
                 soup = BeautifulSoup(html_f, 'html.parser')
         else:
             soup = BeautifulSoup(html, 'html.parser')
-
-
-        if self.save_pretty_html:
-            dir = generate_log_path(self.log_dir, item_name, is_active=False)
-            write_to_dir(soup.prettify(), dir, 'html')
 
         parsed_items = []
         listings = soup.find_all(class_="su-card-container") #add main page items
@@ -98,7 +92,7 @@ class ListingParser:
             #parse the sold substitle to extract sold date asw
 
             sold_date = self._safe_get_element_text(listing,
-                classes=".s-card__caption")
+                classes=".s-card__caption, .su-styled-text positive default")
 
             # TODO: explain what is going on here
             if sold_date != "N/A":
@@ -124,6 +118,10 @@ class ListingParser:
 
         parsed_items_df = pd.DataFrame(parsed_items)
 
+        print(rf"{parsed_items[-2]['full_name']}")
+        print(rf"{parsed_items_df.iloc[-2]['full_name']}")
+        print(rf"\t")
+
         if self.save_df:
             dir = generate_log_path(self.log_dir, item_name, is_active=False)
             write_df_to_dir(parsed_items_df, dir)
@@ -137,6 +135,13 @@ class ListingParser:
         '''Get the stripped text of an element if it exists, with fallback.'''
 
         sub_element = element.select_one(classes)
+
+        txt = rf'{sub_element.text}' if sub_element else fallback
+        if 'iPhone 16 Soft Oled Screen' in txt:
+            txt = txt.replace('\t', '')
+            txt = txt.replace('\n', '').strip()
+            print(rf'{txt}')
+
         return rf'{sub_element.text.strip()}' if sub_element else fallback
 
         
@@ -144,6 +149,6 @@ class ListingParser:
     def _clean_price_str(self, price_str: str) -> str:
 
         replacements = str.maketrans({'£': '', ',': ''})
-        cleaned_price_str = price_str[1:].translate(replacements)
+        cleaned_price_str = price_str[1:].translate(replacements) # First char is strange
 
         return cleaned_price_str
