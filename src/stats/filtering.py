@@ -3,7 +3,9 @@
 from dataclasses import dataclass
 
 import pandas as pd
+import numpy as np
 
+from utils.misc import get_text_timestamp
 
 
 @dataclass
@@ -78,6 +80,18 @@ def conv_dates(df: pd.DataFrame) -> pd.DataFrame:
 def set_date_as_index(df: pd.DataFrame) -> pd.DataFrame:
 
     df.set_index('sold_date', inplace=True)
+    return df
+
+
+def replace_null_shipping_with_avg(df: pd.DataFrame) -> pd.DataFrame:
+    '''
+    Replace null shipping values with the average shipping value for the df.
+    Recommended to do after all other cleaning so averages are more accurate.
+    '''
+
+    avg_shipping = df['ship_price'].mean()
+
+    df['ship_price'] = df['ship_price'].fillna(avg_shipping)
     return df
 
 
