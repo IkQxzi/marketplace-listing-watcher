@@ -3,7 +3,9 @@
 from dataclasses import dataclass
 
 import pandas as pd
+import numpy as np
 
+from utils.misc import get_text_timestamp
 
 
 @dataclass
@@ -65,6 +67,31 @@ def remove_records_containing(
     for txt in filter_conf.banned_txts:
         df = df[~df['full_name'].str.contains(txt, case=filter_conf.ban_txt_case_sensitive)]
 
+    return df
+
+
+def conv_dates(df: pd.DataFrame) -> pd.DataFrame:
+    '''Convert dates to datetime format Pandas uses.'''
+
+    df['sold_date'] = pd.to_datetime(df['sold_date'])
+    return df
+
+
+def set_date_as_index(df: pd.DataFrame) -> pd.DataFrame:
+
+    df.set_index('sold_date', inplace=True)
+    return df
+
+
+def replace_null_shipping_with_avg(df: pd.DataFrame) -> pd.DataFrame:
+    '''
+    Replace null shipping values with the average shipping value for the df.
+    Recommended to do after all other cleaning so averages are more accurate.
+    '''
+
+    avg_shipping = df['ship_price'].mean()
+
+    df['ship_price'] = df['ship_price'].fillna(avg_shipping)
     return df
 
 
