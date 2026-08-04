@@ -84,6 +84,6 @@ def write_df_to_dir(df: DataFrame, dir: Path) -> None:
     dir.mkdir(parents=True, exist_ok=True)
     df_path = (dir / get_timestamp()).with_suffix('.csv') 
 
-    df.to_csv(df_path)
+    df.to_csv(df_path, encoding='utf-8')
 
     print(f'Saved df to path: {df_path}')

@@ -16,3 +16,4 @@ dependencies = [
 
 [project.scripts]
 html2csv = "scripts.html2csv:main"
+prettify-html = "scripts.prettify_html:main"
