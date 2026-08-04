@@ -4,6 +4,7 @@ Note that utf-8 encoding is required to support emojis.
 '''
 
 from pandas import DataFrame, read_csv
+import pandas as pd
 
 import json
 from pathlib import Path
@@ -87,3 +88,33 @@ def write_df_to_dir(df: DataFrame, dir: Path) -> None:
     df.to_csv(df_path, encoding='utf-8')
 
     print(f'Saved df to path: {df_path}')
+
+def read_df_from_dir(directory:str, filename:str, append_extension:bool) -> DataFrame:
+    '''append_extension specifies whether a .csv extension needs to be added to the end of the filename'''
+
+    if append_extension: filetype = ".csv" 
+    else: filetype = ""
+
+    df_path = f"{directory}/{filename}{filetype}"
+
+    return pd.read_csv(df_path)
+
+def get_file_names_in_dir(directory:str) -> list:
+    filenames = []
+
+    dt = Path(directory)
+    for file in dt.iterdir():
+        if file.is_file():
+            filenames.append(file.name)
+
+    return filenames
+
+def read_multiple_df(directory:str) -> DataFrame:
+
+    all_data = []
+    filenames = get_file_names_in_dir(directory)
+
+    for file in filenames:
+        all_data.append(read_df_from_dir(directory, file, False))
+
+    return pd.concat(all_data, ignore_index=True)
