@@ -9,21 +9,18 @@ from utils.config import LOG_DIR
 from utils.io import generate_log_path, write_to_dir, write_df_to_dir
 
 
-
 class ListingParser:
 
-    def __init__(self, save_df=True, save_pretty_html=True, log_dir: Path=LOG_DIR) -> None:
+    def __init__(self, save_df=True, log_dir: Path=LOG_DIR) -> None:
         self.log_dir = log_dir
         self.save_df = save_df
-        self.save_pretty_html = save_pretty_html
 
     # TODO: Use more robust parsing
-    # TODO: fix how shipping price is extracted, number is way too high 
-    # And repeat request until elements found
     def parse_sold_listings_html(self, item_name: str | None,
                                   html: str | Path) -> pd.DataFrame:
         '''
         Convert html of sold listings page into dataframe and return.
+        Also logs df by default (see __init__ arguments).
         '''
 
         # Try to infer item name from directory structure
@@ -40,11 +37,6 @@ class ListingParser:
                 soup = BeautifulSoup(html_f, 'html.parser')
         else:
             soup = BeautifulSoup(html, 'html.parser')
-
-
-        if self.save_pretty_html:
-            dir = generate_log_path(self.log_dir, item_name, is_active=False)
-            write_to_dir(soup.prettify(), dir, 'html')
 
         parsed_items = []
         listings = soup.find_all(class_="su-card-container") #add main page items
@@ -79,12 +71,13 @@ class ListingParser:
             if price != "N/A":
                 price = self._clean_price_str(price)
 
-            # TODO: Sometimes differs
-            ship_price = self._safe_get_element_text(listing,
-                classes=".s-item__shipping, .su-styled-text.secondary.large")
+            # Not in fn to get ship price because it may be useful later
+            listing_infos = listing.select(
+                selector=
+                "div.s-card__attribute-row span.su-styled-text.secondary.large:not(large-1, s-card__price strikethrough)"
+                )
 
-            if ship_price != "N/A":
-                ship_price = self._clean_price_str(ship_price)
+            ship_price: str | float = self._get_ship_price(listing_infos)
 
             img_container = listing.select_one(".su-card-container__media, .s-card__link, .su-image")
             img_el = img_container.select_one("img") if img_container else None
@@ -94,10 +87,10 @@ class ListingParser:
             subtitle = self._safe_get_element_text(listing, 
                 classes=".su-item-card__subtitle, .s-card__subtitle")
 
-            #parse the sold substitle to extract sold date asw
+            #parse the sold substitle to extract sold date aswkk
 
             sold_date = self._safe_get_element_text(listing,
-                classes=".s-card__caption")
+                classes=".s-card__caption, .su-styled-text.positive.default")
 
             # TODO: explain what is going on here
             if sold_date != "N/A":
@@ -138,11 +131,33 @@ class ListingParser:
         sub_element = element.select_one(classes)
         return rf'{sub_element.text.strip()}' if sub_element else fallback
 
+
+    def _get_ship_price(self, listing_infos: list[Tag], fallback: str = 'N/A') -> float | str:
+        '''Return the raw string from the element containing the shipping price information, with fallback.'''
+
+        if len(listing_infos) == 0:
+            return fallback
+
+        # There are multiple elements with identical classes, 
+        # so searching text is necessary
+        for info in listing_infos:
+
+            # +£<amount> is its own element
+            if "+£" in info.text:
+                raw_ship_str = info.text.strip().removesuffix(' delivery')
+                return float(raw_ship_str[2:])
+
+            # Otherwise, Free Delivery
+            elif "free delivery" in info.text.lower():
+                return float(0)
+
+        return fallback
+
         
     # TODO: fix, fragile and depends on strange character being present
     def _clean_price_str(self, price_str: str) -> str:
 
         replacements = str.maketrans({'£': '', ',': ''})
-        cleaned_price_str = price_str[1:].translate(replacements)
+        cleaned_price_str = price_str[1:].translate(replacements) # First char is strange
 
         return cleaned_price_str

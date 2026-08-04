@@ -1,7 +1,20 @@
 '''Filtering listings using various criteria.'''
 
+from dataclasses import dataclass
+
 import pandas as pd
 import numpy as np
+
+from utils.misc import get_text_timestamp
+
+
+@dataclass
+class FilterConfig:
+    required_txts: list[str] | None = None
+    req_txts_case_sensitive: bool = False
+    banned_txts: list[str] | None = None
+    ban_txt_case_sensitive: bool = False
+
 
 def drop_empty_records(df: pd.DataFrame) -> pd.DataFrame:
     '''Filter out errored/blank listings (usually the first 2).'''
@@ -26,7 +39,7 @@ def remove_trailing_name_text(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def keep_records_containing(
-    df: pd.DataFrame, required_txt: str | None = None, case_sensitive = False
+    df: pd.DataFrame, filter_conf: FilterConfig,
     ) -> pd.DataFrame:
     
     '''
@@ -34,20 +47,52 @@ def keep_records_containing(
     If unspecified, tries to infer from parent directory name.
     '''
 
-    if not required_txt:
+    if not filter_conf.required_txts:
         raise NotImplementedError("Currently, inferring name from parent directory not supported.")
     
-    # Non case-sensitive
-    return df[df['full_name'].str.contains(required_txt, case=case_sensitive)]
+    # Remove sequentially
+    for txt in filter_conf.required_txts:
+        df = df[df['full_name'].str.contains(txt, case=filter_conf.req_txts_case_sensitive)]
+
+    return df
 
 
 def remove_records_containing(
-    df: pd.DataFrame, banned_txt: list, case_sensitive = False
+    df: pd.DataFrame, filter_conf: FilterConfig,
     ) -> pd.DataFrame:
     '''Remove listings containing the banned keywords.'''
 
-    #generate banned text string from keywords
-    keywords_list = "|".join(banned_txt)
+    assert filter_conf.banned_txts, "Banned texts not specified in filter config!"
+
+    for txt in filter_conf.banned_txts:
+        df = df[~df['full_name'].str.contains(txt, case=filter_conf.ban_txt_case_sensitive)]
+
+    return df
+
+
+def conv_dates(df: pd.DataFrame) -> pd.DataFrame:
+    '''Convert dates to datetime format Pandas uses.'''
+
+    df['sold_date'] = pd.to_datetime(df['sold_date'])
+    return df
+
+
+def set_date_as_index(df: pd.DataFrame) -> pd.DataFrame:
+
+    df.set_index('sold_date', inplace=True)
+    return df
+
+
+def replace_null_shipping_with_avg(df: pd.DataFrame) -> pd.DataFrame:
+    '''
+    Replace null shipping values with the average shipping value for the df.
+    Recommended to do after all other cleaning so averages are more accurate.
+    '''
+
+    avg_shipping = df['ship_price'].mean()
+
+    df['ship_price'] = df['ship_price'].fillna(avg_shipping)
+    return df
 
     return df[~df['full_name'].str.contains(keywords_list, case=case_sensitive)]
 

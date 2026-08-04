@@ -11,6 +11,8 @@ from pathlib import Path
 
 from utils.misc import get_timestamp
 
+
+# TODO: Rewrite this to not require is_active flag (pass in sold/active as log_dir)
 def generate_log_path(
     log_dir: Path, item_name: str, is_active: bool,
     cat_id: int | None = None, cat_name: str | None = None
@@ -62,7 +64,7 @@ def write_to_dir(content: str, dir: Path, file_ext: str) -> None:
         file_ext = '.' + file_ext
 
     # Create file
-    dir.parent.mkdir(parents=True, exist_ok=True)
+    dir.mkdir(parents=True, exist_ok=True)
     file_path = (dir / get_timestamp()).with_suffix(file_ext)
 
     print(f'Writing to file: {str(file_path)}')
@@ -83,7 +85,7 @@ def write_df_to_dir(df: DataFrame, dir: Path) -> None:
     dir.mkdir(parents=True, exist_ok=True)
     df_path = (dir / get_timestamp()).with_suffix('.csv') 
 
-    df.to_csv(df_path)
+    df.to_csv(df_path, encoding='utf-8')
 
     print(f'Saved df to path: {df_path}')
 

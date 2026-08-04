@@ -1,6 +1,7 @@
 [project]
 name = "ebaymk2"
 version = "1.0.0"
+
 dependencies = [
     "playwright==1.59.0",
     "camoufox",
@@ -10,4 +11,9 @@ dependencies = [
     "python-dotenv",
     "requests",
     "camoufox[geoip]",
+    "click",
 ]
+
+[project.scripts]
+html2csv = "scripts.html2csv:main"
+prettify-html = "scripts.prettify_html:main"

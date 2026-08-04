@@ -16,7 +16,7 @@ ENV_PATH = ROOT_DIR / "used.env"
 # For unique paths
 load_dotenv(ENV_PATH)
 
-# temp dirs
+# temkp dirs
 temp_html_path_str = os.getenv('test_html_path') # Optional for testing
 if temp_html_path_str:
     TEMP_HTML_PATH = Path(temp_html_path_str)
@@ -30,3 +30,10 @@ API_SEARCH_URL = f"{API_URL}/item_summary/search"
 
 # Regular URLs
 WEB_SEARCH_URL = "https://www.ebay.co.uk/sch/i.html"
+
+# Proxies
+PROXY_CONFIG = {
+    'server': os.getenv('proxy_server'),
+    'username': os.getenv('proxy_username'),
+    'password': os.getenv('proxy_password')
+}

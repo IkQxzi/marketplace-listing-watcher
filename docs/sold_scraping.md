@@ -1,3 +1,15 @@
+### HTML Structure
+---
+- **Delivery information**
+	- Classes:
+		- For the price ('+11.95'), 3 classes: `su-styled-text`, `secondary`, `large`
+		- For the following string, 3 classes: `su-styled-text`, `positive`, `bold`, `large`
+	- Variations:
+		- "Free Delivery" always when free
+		- "+11.95 delivery in 2-3 days"
+		- "+2.95 delivery"
+			- Note that regex matching may be insufficient as some listing titles advertise "free delivery"
+			- Could do exact regex matching (exact capitalisation, '+' symbol)
 ### Sold URL main structure
 ---
 **searching:**
