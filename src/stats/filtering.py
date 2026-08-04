@@ -68,6 +68,19 @@ def remove_records_containing(
     return df
 
 
+def conv_dates(df: pd.DataFrame) -> pd.DataFrame:
+    '''Convert dates to datetime format Pandas uses.'''
+
+    df['sold_date'] = pd.to_datetime(df['sold_date'])
+    return df
+
+
+def set_date_as_index(df: pd.DataFrame) -> pd.DataFrame:
+
+    df.set_index('sold_date', inplace=True)
+    return df
+
+
 def clean_listings(df: pd.DataFrame) -> pd.DataFrame:
     '''Call all the cleaning functions.'''
 
