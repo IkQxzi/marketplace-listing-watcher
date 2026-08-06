@@ -13,13 +13,13 @@ def combine_price_with_shipping(df: pd.DataFrame) -> pd.DataFrame:
 
 def fit_to_normal(df:pd.DataFrame) -> object:
     '''Fit the dataframe price distribution to the normal distribution and output the parameters as an object.
-    mu = mean.
+    mean = mean.
     std = standard deviation. '''
 
-    mu, std = stats.norm.fit(df["price"])
+    mean, std = stats.norm.fit(df["price"])
 
     return {
-        "mu":mu,
+        "mean":mean,
         "std":std
     }
 
@@ -36,27 +36,4 @@ def fit_to_lognormal(df:pd.DataFrame) -> object:
         "shape":shape,
         "loc":loc,
         "scale":scale
-    }
-
-
-def calculate_simple_stats(df:pd.DataFrame) -> object:
-    '''Calculate simple stats from dataframe and return as an object: mean, min, q1, median, q3, max'''
-
-    prices = df["price"]
-
-    q0 = prices.quantile(0)
-    q1 = prices.quantile(0.25)
-    q2 = prices.quantile(0.50)
-    q3 = prices.quantile(0.75)
-    q4 = prices.quantile(1)
-
-    mean = np.mean(prices)
-
-    return {
-        "mean":mean,
-        "min":q0,
-        "q1":q1,
-        "median":q2,
-        "q3":q3,
-        "max":q4
     }

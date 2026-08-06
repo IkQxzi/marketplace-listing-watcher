@@ -6,7 +6,7 @@ def pdf_normal(
     '''Returns object of values (x and y) to draw normal curve.'''
 
     x_vals = np.linspace(min-100, max+100, array_size) #generate list of x-values
-    y_vals = stats.norm.pdf(x=x_vals, loc=params["mu"], scale=params["std"])
+    y_vals = stats.norm.pdf(x=x_vals, loc=params["mean"], scale=params["std"])
 
     return {
         "x":x_vals,
