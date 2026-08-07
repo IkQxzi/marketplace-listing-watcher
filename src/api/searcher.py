@@ -1,26 +1,37 @@
 '''Polling API for active listings.'''
 
 import requests
+
+from dataclasses import dataclass
 from collections import Counter, defaultdict
 from pathlib import Path
+from typing import Any
 
-from utils.config import API_SEARCH_URL, ACTIVE_DIR
-from utils.misc import get_timestamp
+from utils.config import (
+    API_SEARCH_URL, ACTIVE_DIR, TEMP_ACTIVE_DIR,
+    APP_ID, CERT_ID, REFRESH_TOKEN
+)
 from utils.io import write_to_dir, generate_log_path
+from api.auth import get_access_token
+
+@dataclass
+class APIResponse:
+    json_response: Any
+    item_name: str
+    cat_id: int
+    cat_name: str
 
 
-def _log_response(r_json, item_name: str, cat_counts: Counter, cat_mappings: defaultdict, active_dir: Path) -> None:
+def log_response(api_response: APIResponse, active_dir: Path) -> None:
     '''Log API response to two files: one for item summaries, one for metadata, using category counts as file names.'''
     
-    cat_id = cat_counts.most_common(1)[0][0]
-    cat_name = cat_mappings[cat_id]
-
     item_dir = generate_log_path(
-        active_dir, item_name, is_active=True, cat_id=cat_id, cat_name=cat_name)
-    write_to_dir(r_json, item_dir, file_ext='json')
+        active_dir, api_resp.item_name, is_active=True, cat_id=api_resp.cat_id, cat_name=api_resp.cat_name
+        )
+    write_to_dir(api_resp.json_response, item_dir, file_ext='json')
 
 
-def _parse_categories(item_summaries: list[dict]) -> tuple[Counter, defaultdict]:
+def _parse_categories(item_summaries: list[dict]) -> tuple[Counter[str], defaultdict[int, str]]:
     '''Parse categories of items,
     and return the counts of each category ID and the associated category name.'''
 
@@ -33,7 +44,7 @@ def _parse_categories(item_summaries: list[dict]) -> tuple[Counter, defaultdict]
 
         for cat in cat_info:
 
-            cat_id = cat['categoryId']
+            cat_id = int(cat['categoryId'])
 
             cat_counts[cat_id] += 1
             cat_mapping[cat_id] = cat['categoryName']
@@ -41,8 +52,11 @@ def _parse_categories(item_summaries: list[dict]) -> tuple[Counter, defaultdict]
     return cat_counts, cat_mapping
 
 
-def search_item(access_token: str, item_name: str, limit: int = 50, category_id: int | None = None, 
-                log_response: bool = False):
+def search_item(
+        access_token: str, item_name: str, limit: int = 50, category_id: int | None = None, 
+        log_response: bool = False
+    ) -> APIResponse:
+
     '''Query for an active search and return the JSON response.'''
 
 
@@ -70,14 +84,26 @@ def search_item(access_token: str, item_name: str, limit: int = 50, category_id:
         exit()
         
     cat_counts, cat_mappings = _parse_categories(item_summaries)
-    
-    if log_response:        
-        _log_response(r_json, item_name, cat_counts, cat_mappings, ACTIVE_DIR)
 
-    # debug
-    for cat_id, cat_count in cat_counts.most_common():
-        print(f'{cat_id}/{cat_mappings[cat_id]}: {cat_count}')
+    # Infer category ID and name from most common
+    cat_id = int(cat_counts.most_common(1)[0][0])
+    cat_name = cat_mappings[cat_id]
 
-    return r_json
+    # DEBUG
+    for cat_id_str, cat_count in cat_counts.most_common():
+        print(f'{(cat_id_str)}/{cat_mappings[int(cat_id_str)]}: {cat_count}')
 
+    return APIResponse(r_json, item_name, cat_id, cat_name)
+
+
+# Example usage
+if __name__ == '__main__':
+
+    assert REFRESH_TOKEN and APP_ID and CERT_ID, "API credentials missing from .env"
+
+    item = 'iphone 16'
+    access_token = get_access_token(REFRESH_TOKEN, APP_ID, CERT_ID)
+
+    api_resp = search_item(access_token, item, log_response=True)
+    log_response(api_resp, TEMP_ACTIVE_DIR)
 
