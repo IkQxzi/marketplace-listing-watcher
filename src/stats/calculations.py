@@ -1,14 +1,11 @@
-'''Calculations involving listing prices.'''
+'''
+Calculations involving listing prices.
+The calculations performed here do not include visualisation or filtering.
+'''
 
 import pandas as pd
 import numpy as np
 from scipy import stats
-def combine_price_with_shipping(df: pd.DataFrame) -> pd.DataFrame:
-    '''Combine price and shipping into one price col called total_price. Assumes both are full with no missing data or errors.'''
-
-    df["total_price"] = df["ship_price"] + df["price"]
-
-    return df
 
 
 def fit_to_normal(df:pd.DataFrame) -> object:
