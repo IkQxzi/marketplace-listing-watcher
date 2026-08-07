@@ -3,7 +3,7 @@ Cleaning data from sold listings.
 Includes functions which clean by calculation.
 Does not incl. outlier-filtering.
 '''
-j
+
 from dataclasses import dataclass
 
 import pandas as pd
