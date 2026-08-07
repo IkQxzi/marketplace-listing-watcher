@@ -71,7 +71,7 @@ def remove_records_containing(
     df["name_lower"] = df["full_name"].str.lower() #create new column with lowercase titles
     txt = r'\b(' + '|'.join(filter_conf.banned_txts) + r')\b' #regex to filter out banned texts as separate words only
 
-    df = df[~df['name_lower'].str.contains(txt, case=False, na=False)]
+    df = df[~df['name_lower'].str.contains(txt, case=filter_conf.ban_txt_case_sensitive)]
 
     return df
 
@@ -99,8 +99,6 @@ def replace_null_shipping_with_avg(df: pd.DataFrame) -> pd.DataFrame:
 
     df['ship_price'] = df['ship_price'].fillna(avg_shipping)
     return df
-
-    return df[~df['full_name'].str.contains(keywords_list, case=case_sensitive)]
 
 
 def combine_price_with_shipping(df: pd.DataFrame) -> pd.DataFrame:
