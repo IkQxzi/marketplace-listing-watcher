@@ -74,3 +74,34 @@ def show_price_hist(
         plt.legend()
 
     plt.show()
+
+# Examples
+def _example_visualisation(cleaned_df: pd.DataFrame) -> None:
+
+    from .distributions import fit_to_lognormal, fit_to_normal
+
+    simple_stats = cleaned_df["price"].describe()
+    normal_params = fit_to_normal(cleaned_df)
+    lognormal_params = fit_to_lognormal(cleaned_df)
+
+    print(simple_stats)
+
+    max = simple_stats["max"]
+    min = simple_stats["min"]
+    mean = simple_stats["mean"]
+    std = normal_params["std"]
+
+    lines_to_include = {
+        "mean": mean,
+        "mean+std": mean+std,
+        "mean-std": mean-std,
+        "q1": simple_stats["25%"],
+        "q3": simple_stats["75%"],
+    }
+
+    normal_pdf = pdf_normal(normal_params, max=max, min=min)
+    lognormal_pdf = pdf_lognormal(lognormal_params, max=max, min=min)
+
+    show_price_hist(cleaned_df, dist_values=lognormal_pdf, lines=lines_to_include, bin_size=25)
+    print(cleaned_df)
+
