@@ -64,8 +64,10 @@ def remove_records_containing(
 
     assert filter_conf.banned_txts, "Banned texts not specified in filter config!"
 
-    for txt in filter_conf.banned_txts:
-        df = df[~df['full_name'].str.contains(txt, case=filter_conf.ban_txt_case_sensitive)]
+    df["name_lower"] = df["full_name"].str.lower() #create new column with lowercase titles
+    txt = r'\b(' + '|'.join(filter_conf.banned_txts) + r')\b' #regex to filter out banned texts as separate words only
+
+    df = df[~df['name_lower'].str.contains(txt, case=False, na=False)]
 
     return df
 
