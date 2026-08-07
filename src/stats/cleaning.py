@@ -54,9 +54,8 @@ def keep_records_containing(
     if not filter_conf.required_txts:
         raise NotImplementedError("Currently, inferring name from parent directory not supported.")
     
-    # Remove sequentially
-    for txt in filter_conf.required_txts:
-        df = df[df['full_name'].str.contains(txt, case=filter_conf.req_txts_case_sensitive)]
+    txt = rf"\b({'|'.join(filter_conf.required_txts)})\b"
+    df = df[df['full_name'].str.contains(txt, case=filter_conf.req_txts_case_sensitive)]
 
     return df
 
@@ -71,6 +70,7 @@ def remove_records_containing(
     df["name_lower"] = df["full_name"].str.lower() #create new column with lowercase titles
     txt = r'\b(' + '|'.join(filter_conf.banned_txts) + r')\b' #regex to filter out banned texts as separate words only
 
+    # Param na unhandled so exceptions warn us of incomplete data
     df = df[~df['name_lower'].str.contains(txt, case=filter_conf.ban_txt_case_sensitive)]
 
     return df
