@@ -10,14 +10,7 @@ import pandas as pd
 import numpy as np
 
 from utils.misc import get_text_timestamp
-
-
-@dataclass
-class FilterConfig:
-    required_txts: list[str] | None = None
-    req_txts_case_sensitive: bool = False
-    banned_txts: list[str] | None = None
-    ban_txt_case_sensitive: bool = False
+from config.filters import FilterConfig
 
 
 def drop_empty_records(df: pd.DataFrame) -> pd.DataFrame:
