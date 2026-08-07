@@ -24,7 +24,7 @@ def drop_empty_records(df: pd.DataFrame) -> pd.DataFrame:
     '''Filter out errored/blank listings (usually the first 2).'''
 
     # The first 2 are usually redundant
-    df = df[~(df['full_name'].str.lower() == 'shop on ebay')]
+    df = df[~(df['title'].str.lower() == 'shop on ebay')]
     
     # To prevent removed listings from affecting index
     df.reset_index(inplace=True, drop=True)
@@ -38,7 +38,7 @@ def remove_trailing_name_text(df: pd.DataFrame) -> pd.DataFrame:
     trailing_text = "Opens in a new window or tab"
 
     return df.assign(
-        full_name= df['full_name'].str.removesuffix(trailing_text)
+        title= df['title'].str.removesuffix(trailing_text)
     )
 
 
@@ -55,7 +55,7 @@ def keep_records_containing(
         raise NotImplementedError("Currently, inferring name from parent directory not supported.")
     
     txt = rf"\b({'|'.join(filter_conf.required_txts)})\b"
-    df = df[df['full_name'].str.contains(txt, case=filter_conf.req_txts_case_sensitive)]
+    df = df[df['title'].str.contains(txt, case=filter_conf.req_txts_case_sensitive)]
 
     return df
 
@@ -70,7 +70,7 @@ def remove_records_containing(
     txt = r'\b(' + '|'.join(filter_conf.banned_txts) + r')\b' #regex to filter out banned texts as separate words only
 
     # Param na unhandled so exceptions warn us of incomplete data
-    df = df[~df['full_name'].str.contains(txt, case=filter_conf.ban_txt_case_sensitive)]
+    df = df[~df['title'].str.contains(txt, case=filter_conf.ban_txt_case_sensitive)]
 
     return df
 
