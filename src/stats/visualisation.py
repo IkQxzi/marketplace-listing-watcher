@@ -6,7 +6,6 @@ import numpy as np
 from scipy import stats
 
 
-
 def pdf_normal(
         params: object, max:float, min:float, array_size: int = 500) -> object:
     '''Returns object of values (x and y) to draw normal curve.'''
