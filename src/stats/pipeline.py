@@ -13,7 +13,7 @@ from stats.cleaning import (
     drop_empty_records, remove_trailing_name_text, 
     keep_records_containing, remove_records_containing, 
     remove_trailing_name_text, conv_dates, set_date_as_index,
-    replace_null_shipping_with_avg
+    replace_null_shipping_with_avg, sum_price_and_shipping
     )
 
 
@@ -31,6 +31,7 @@ def get_cleaned_df(csv_path: Path, filter_conf: FilterConfig) -> pd.DataFrame:
     .pipe(conv_dates)
     .pipe(set_date_as_index)
     .pipe(replace_null_shipping_with_avg)
+    .pipe(sum_price_and_shipping)
     )
 
     return clean_df

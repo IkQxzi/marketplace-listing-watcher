@@ -101,8 +101,8 @@ def replace_null_shipping_with_avg(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def combine_price_with_shipping(df: pd.DataFrame) -> pd.DataFrame:
-    '''Combine price and shipping into one price col called total_price. Assumes both are full with no missing data or errors.'''
+def sum_price_and_shipping(df: pd.DataFrame) -> pd.DataFrame:
+    '''Combine price and shipping into new price col called total_price. Assumes both are full with no missing data or errors.'''
 
     df["total_price"] = df["ship_price"] + df["price"]
 
