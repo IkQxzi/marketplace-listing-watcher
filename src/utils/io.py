@@ -89,15 +89,6 @@ def write_df_to_dir(df: DataFrame, dir: Path) -> None:
 
     print(f'Saved df to path: {df_path}')
 
-def read_df_from_dir(directory:str, filename:str, append_extension:bool) -> DataFrame:
-    '''append_extension specifies whether a .csv extension needs to be added to the end of the filename'''
-
-    if append_extension: filetype = ".csv" 
-    else: filetype = ""
-
-    df_path = f"{directory}/{filename}{filetype}"
-
-    return pd.read_csv(df_path)
 
 def get_file_names_in_dir(directory:str) -> list:
     filenames = []
@@ -110,11 +101,13 @@ def get_file_names_in_dir(directory:str) -> list:
     return filenames
 
 def read_multiple_df(directory:str) -> DataFrame:
+    '''Takes all the CSVs in a directory and returns as one DataFrame.'''
 
     all_data = []
     filenames = get_file_names_in_dir(directory)
 
-    for file in filenames:
-        all_data.append(read_df_from_dir(directory, file, False))
+    for name in filenames:
+        file_path = directory / name
+        all_data.append(read_df_from_path(file_path))
 
     return pd.concat(all_data, ignore_index=True)
