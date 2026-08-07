@@ -9,12 +9,20 @@ from utils.misc import get_text_timestamp
 
 
 def filter_by_price(
-    df:pd.DataFrame, upper_bound: float, lower_bound: float, col: str
+    df:pd.DataFrame, lower_bound: float | None, upper_bound: float | None, col: str
     ) -> pd.DataFrame:
-    '''Remove listings above or below a certain threshold within a column.'''
+    '''
+    Remove listings above or below a certain threshold within a column.
+    Both upper and lower bound must be specified (can be None).
+    '''
 
-    return df[(df[col] >= lower_bound) & (df[col] <= upper_bound)]
-    
+    if upper_bound:
+        df = df[df[col] <= upper_bound]
+
+    if lower_bound:
+        df = df[df[col] >= lower_bound]
+
+    return df    
 
 def filter_by_std(
     df:pd.DataFrame, n:int, col: str
