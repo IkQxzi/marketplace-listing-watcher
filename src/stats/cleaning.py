@@ -1,4 +1,8 @@
-'''Filtering listings using various criteria.'''
+'''
+Cleaning data from sold listings.
+Includes functions which clean by calculation.
+Does not incl. outlier-filtering.
+'''
 
 from dataclasses import dataclass
 
@@ -97,6 +101,15 @@ def replace_null_shipping_with_avg(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
     return df[~df['full_name'].str.contains(keywords_list, case=case_sensitive)]
+
+
+def combine_price_with_shipping(df: pd.DataFrame) -> pd.DataFrame:
+    '''Combine price and shipping into one price col called total_price. Assumes both are full with no missing data or errors.'''
+
+    df["total_price"] = df["ship_price"] + df["price"]
+
+    return df
+
 
 def clean_listings(df: pd.DataFrame) -> pd.DataFrame:
     '''Call all the cleaning functions.'''
