@@ -5,7 +5,7 @@ from bs4 import BeautifulSoup, Tag
 
 from pathlib import Path
 
-from utils.config import LOG_DIR
+from config.dirs import LOG_DIR
 from utils.io import generate_log_path, write_to_dir, write_df_to_dir
 
 

@@ -10,7 +10,7 @@ from api.auth import get_refresh_token, get_access_token
 from api import search_item
 from webscraper.scraper import ListingScraper
 from webscraper.parser import ListingParser
-from utils.config import ENV_PATH, TEMP_ACTIVE_DIR, TEMP_HTML_PATH, TEMP_LOG_DIR
+from config.dirs import ENV_PATH, TEMP_ACTIVE_DIR, TEMP_LOG_DIR
 from utils.io import get_latest_search_json
 
 

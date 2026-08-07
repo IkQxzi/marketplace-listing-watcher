@@ -1,5 +1,5 @@
 '''API config.'''
 
 # Endpoints
-API_URL = "https://api.ebay.com/buy/browse/v1"
-API_SEARCH_URL = f"{API_URL}/item_summary/search"
+BROWSE_ENDPOINT = "https://api.ebay.com/buy/browse/v1"
+SEARCH_ENDPOINT = f"{BROWSE_ENDPOINT}/item_summary/search"
