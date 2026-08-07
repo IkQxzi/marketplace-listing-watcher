@@ -4,7 +4,8 @@ import requests
 from collections import Counter, defaultdict
 from pathlib import Path
 
-from utils.config import API_SEARCH_URL, ACTIVE_DIR
+from config.dirs import ACTIVE_DIR
+from config.api import SEARCH_ENDPOINT
 from utils.misc import get_timestamp
 from utils.io import write_to_dir, generate_log_path
 
@@ -60,7 +61,7 @@ def search_item(access_token: str, item_name: str, limit: int = 50, category_id:
         'Authorization': f'Bearer {access_token}'
     }
 
-    r = requests.get(url=API_SEARCH_URL, params=params, headers=headers, timeout=10)
+    r = requests.get(url=SEARCH_ENDPOINT, params=params, headers=headers, timeout=10)
     r_json = r.json()
     
     try:

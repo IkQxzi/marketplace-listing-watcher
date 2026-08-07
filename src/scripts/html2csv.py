@@ -3,7 +3,7 @@ import click
 from pathlib import Path
 
 from webscraper.parser import ListingParser
-from utils.config import LOG_DIR, TEMP_LOG_DIR
+from config.dirs import LOG_DIR, TEMP_LOG_DIR
 
 
 LOG_DIRS = {
