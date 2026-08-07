@@ -34,4 +34,6 @@ def get_cleaned_df(csv_path: Path, filter_conf: FilterConfig) -> pd.DataFrame:
     .pipe(sum_price_and_shipping)
     )
 
+    assert len(set(clean_df['id'])) == len(list(clean_df['id'])), "IDs of cleaned df are non-unique!"
+
     return clean_df
