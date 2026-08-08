@@ -5,19 +5,12 @@ import requests
 from dataclasses import dataclass
 from collections import Counter, defaultdict
 from pathlib import Path
-from typing import Any
+from typing import Any, Protocol
 
-from config.dirs import ACTIVE_DIR, TEMP_ACTIVE_DIR
-from config.api import SEARCH_ENDPOINT, APP_ID, CERT_ID, REFRESH_TOKEN
 from utils.io import write_to_dir, generate_log_path
 from api.auth import get_access_token
-
-@dataclass
-class APIResponse:
-    json_response: Any
-    item_name: str
-    cat_id: int
-    cat_name: str
+from alerts.core import Alerter
+from .core import APIResponse
 
 
 def log_response(api_response: APIResponse, active_dir: Path) -> None:
@@ -29,79 +22,93 @@ def log_response(api_response: APIResponse, active_dir: Path) -> None:
     write_to_dir(api_resp.json_response, item_dir, file_ext='json')
 
 
-def _parse_categories(item_summaries: list[dict]) -> tuple[Counter[str], defaultdict[int, str]]:
-    '''Parse categories of items,
-    and return the counts of each category ID and the associated category name.'''
+class ListingSearcher:
 
-    cat_counts = Counter()
-    cat_mapping = defaultdict()
+    def __init__(self, alerter: Alerter) -> None:
+        self.alerter = alerter
 
-    for item in item_summaries:
+    def _parse_categories(self, item_summaries: list[dict]) -> tuple[Counter[str], defaultdict[int, str]]:
+        '''Parse categories of items,
+        and return the counts of each category ID and the associated category name.'''
+
+        cat_counts = Counter()
+        cat_mapping = defaultdict()
+
+        for item in item_summaries:
+            
+            cat_info: list = item['categories']
+
+            for cat in cat_info:
+
+                cat_id = int(cat['categoryId'])
+
+                cat_counts[cat_id] += 1
+                cat_mapping[cat_id] = cat['categoryName']
         
-        cat_info: list = item['categories']
-
-        for cat in cat_info:
-
-            cat_id = int(cat['categoryId'])
-
-            cat_counts[cat_id] += 1
-            cat_mapping[cat_id] = cat['categoryName']
-    
-    return cat_counts, cat_mapping
+        return cat_counts, cat_mapping
 
 
-def search_item(
-        access_token: str, item_name: str, limit: int = 50, category_id: int | None = None, 
-        log_response: bool = False
-    ) -> APIResponse:
+    def get_listings(
+            self, access_token: str, item_name: str, limit: int = 50, category_id: int | None = None, 
+        ) -> APIResponse:
 
-    '''Query for an active search and return the JSON response.'''
+        '''Query API (optionally restricting category) and return the JSON response.'''
 
 
-    params: dict[str, str | int] = {
-        'q': item_name, # parens + comma for or, spc for and
-        'limit': limit, # no. of items
-        'offset': 0
-    }
+        params: dict[str, str | int] = {
+            'q': item_name, # parens + comma for or, spc for and
+            'limit': limit, # no. of items
+            'offset': 0
+        }
 
-    if category_id: 
-        params['category_ids'] = category_id
+        if category_id: 
+            params['category_ids'] = category_id
 
-    headers = {
-        'X-EBAY-C-MARKETPLACE-ID': 'EBAY_GB',
-        'Authorization': f'Bearer {access_token}'
-    }
+        headers = {
+            'X-EBAY-C-MARKETPLACE-ID': 'EBAY_GB',
+            'Authorization': f'Bearer {access_token}'
+        }
 
-    r = requests.get(url=SEARCH_ENDPOINT, params=params, headers=headers, timeout=10)
-    r_json = r.json()
-    
-    try:
-        item_summaries: list[dict] = r.json()['itemSummaries']
-    except KeyError:
-        print(f'KeyError; r_json: {r_json}')
-        exit()
+        r = requests.get(url=SEARCH_ENDPOINT, params=params, headers=headers, timeout=10)
+        r_json = r.json()
         
-    cat_counts, cat_mappings = _parse_categories(item_summaries)
+        try:
+            item_summaries: list[dict] = r.json()['itemSummaries']
+        except KeyError:
+            print(f'KeyError; r_json: {r_json}')
+            exit()
+            
+        cat_counts, cat_mappings = self._parse_categories(item_summaries)
 
-    # Infer category ID and name from most common
-    cat_id = int(cat_counts.most_common(1)[0][0])
-    cat_name = cat_mappings[cat_id]
+        # Infer category ID and name from most common
+        cat_id = int(cat_counts.most_common(1)[0][0])
+        cat_name = cat_mappings[cat_id]
 
-    # DEBUG
-    for cat_id_str, cat_count in cat_counts.most_common():
-        print(f'{(cat_id_str)}/{cat_mappings[int(cat_id_str)]}: {cat_count}')
+        # DEBUG
+        for cat_id_str, cat_count in cat_counts.most_common():
+            print(f'{(cat_id_str)}/{cat_mappings[int(cat_id_str)]}: {cat_count}')
 
-    return APIResponse(r_json, item_name, cat_id, cat_name)
+        return APIResponse(r_json, item_name, cat_id, cat_name)
 
 
 # Example usage
 if __name__ == '__main__':
 
+    from config.dirs import ACTIVE_DIR, TEMP_ACTIVE_DIR
+    from config.alerts import DISCORD_WEBHOOK_URL
+    from config.api import SEARCH_ENDPOINT, APP_ID, CERT_ID, REFRESH_TOKEN
+    from alerts.discord import DiscordBot
+
     assert REFRESH_TOKEN and APP_ID and CERT_ID, "API credentials missing from .env"
+    assert DISCORD_WEBHOOK_URL, "Discord webhook URL missing from .env"
 
     item = 'iphone 16'
-    access_token = get_access_token(REFRESH_TOKEN, APP_ID, CERT_ID)
 
-    api_resp = search_item(access_token, item, log_response=True)
+    disc_bot = DiscordBot(DISCORD_WEBHOOK_URL)
+
+    access_token = get_access_token(REFRESH_TOKEN, APP_ID, CERT_ID)
+    searcher = ListingSearcher(disc_bot)
+
+    api_resp = searcher.get_listings(access_token, item)
     log_response(api_resp, TEMP_ACTIVE_DIR)
 
