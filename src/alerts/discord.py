@@ -13,15 +13,15 @@ class DiscordBot(Alerter):
         self.webhook_url = webhook_url
 
 
-    def alert(self, message: dict[str, Any]) -> int:
+    def alert(self, list_info: ActiveListingInfo) -> int:
 
-        response = requests.post(self.webhook_url, json=message)
+        message = self._build_message(list_info)
+        status_code = self._send_message(message)
 
-        return response.status_code
+        return status_code
     
 
-
-    def build_message(self, list_info: ActiveListingInfo) -> dict[str, Any]:
+    def _build_message(self, list_info: ActiveListingInfo) -> dict[str, Any]:
 
         message = { #message to be sent by bot
                     "username": "Alerter",
@@ -36,9 +36,13 @@ class DiscordBot(Alerter):
                             ],
                         }
                     ]
-                }
-                
+                }         
 
         return message
 
+
+    def _send_message(self, message: dict[str, Any]) -> int:
+
+        response = requests.post(self.webhook_url, json=message)
+        return response.status_code
     

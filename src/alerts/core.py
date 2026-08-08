@@ -1,6 +1,7 @@
 '''Core functionality for all alert systems.'''
 
 from typing import Protocol, Any
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
 
@@ -17,11 +18,8 @@ class ActiveListingInfo:
 # Bot, SMS service, etc.
 class Alerter(Protocol):
 
-    def build_message(self, list_info: ActiveListingInfo) -> Any:
-        ...
-
     # Returns status code
-    def alert(self, message: Any) -> int:
+    def alert(self, list_info: ActiveListingInfo) -> int:
         ...
 
 
