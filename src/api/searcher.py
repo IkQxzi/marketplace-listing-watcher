@@ -7,10 +7,8 @@ from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any
 
-from utils.config import (
-    API_SEARCH_URL, ACTIVE_DIR, TEMP_ACTIVE_DIR,
-    APP_ID, CERT_ID, REFRESH_TOKEN
-)
+from config.dirs import ACTIVE_DIR, TEMP_ACTIVE_DIR
+from config.api import SEARCH_ENDPOINT, APP_ID, CERT_ID, REFRESH_TOKEN
 from utils.io import write_to_dir, generate_log_path
 from api.auth import get_access_token
 
@@ -74,7 +72,7 @@ def search_item(
         'Authorization': f'Bearer {access_token}'
     }
 
-    r = requests.get(url=API_SEARCH_URL, params=params, headers=headers, timeout=10)
+    r = requests.get(url=SEARCH_ENDPOINT, params=params, headers=headers, timeout=10)
     r_json = r.json()
     
     try:

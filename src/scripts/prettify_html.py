@@ -4,7 +4,7 @@ from bs4 import BeautifulSoup
 from pathlib import Path
 
 from utils.io import write_to_dir
-from utils.config import TEMP_LOG_DIR
+from config.dirs import TEMP_LOG_DIR
 
 
 @click.command(name=None)
