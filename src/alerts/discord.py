@@ -4,10 +4,10 @@ import requests
 from typing import Any
 
 from utils.misc import get_text_timestamp
-from .core import Alerter, ActiveListingInfo
+from .core import ActiveListingInfo
 
 
-class DiscordBot(Alerter):
+class DiscordBot():
 
     def __init__(self, webhook_url: str) -> None:
         self.webhook_url = webhook_url
