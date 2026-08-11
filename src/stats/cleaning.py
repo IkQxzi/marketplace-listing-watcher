@@ -99,10 +99,3 @@ def sum_price_and_shipping(df: pd.DataFrame) -> pd.DataFrame:
     df["total_price"] = df["ship_price"] + df["price"]
 
     return df
-
-
-def clean_listings(df: pd.DataFrame) -> pd.DataFrame:
-    '''Call all the cleaning functions.'''
-
-    raise NotImplementedError
-

@@ -5,38 +5,39 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy import stats
 
+from dataclasses import dataclass
+from stats.distributions import LognormalParams, NormalParams
+
+@dataclass(frozen=True)
+class DistributionPoints:
+	x: list[float]
+	y: list[float]
 
 def pdf_normal(
-        params: object, max:float, min:float, array_size: int = 500) -> object:
+        params: NormalParams, max:float, min:float, array_size: int = 500) -> DistributionPoints:
     '''Returns object of values (x and y) to draw normal curve.'''
 
     x_vals = np.linspace(min-100, max+100, array_size) #generate list of x-values
-    y_vals = stats.norm.pdf(x=x_vals, loc=params["mean"], scale=params["std"])
+    y_vals = stats.norm.pdf(x=x_vals, loc=params.mean, scale=params.std)
 
-    return {
-        "x":x_vals,
-        "y":y_vals
-    }
+    return DistributionPoints(x=x_vals, y=y_vals)
 
 
 def pdf_lognormal(
-        params: object, max:float, min:float, array_size: int = 500) -> object:
+        params: LognormalParams, max:float, min:float, array_size: int = 500) -> DistributionPoints:
     '''Returns object of values (x and y) to draw normal curve.'''
 
     x_vals = np.linspace(min-100, max+100, array_size) #generate list of x-values
-    y_vals = stats.lognorm.pdf(x=x_vals, loc=params["loc"], scale=params["scale"], s=params["shape"])
+    y_vals = stats.lognorm.pdf(x=x_vals, loc=params.loc, scale=params.scale, s=params.shape)
 
-    return {
-        "x":x_vals,
-        "y":y_vals
-    }
+    return DistributionPoints(x=x_vals, y=y_vals)
 
 
 def show_price_hist(
         df: pd.DataFrame, 
         bin_size: float | None = None, 
-        dist_values: object | None = None,
-        lines: object | None = None
+        dist_values: DistributionPoints | None = None,
+        lines: dict | None = None
         ) -> None:
     
     '''
@@ -57,9 +58,9 @@ def show_price_hist(
 
     if dist_values: #plot distribution using values
         scale_factor = len(df) * bin_size
-        scaled_y = dist_values["y"] * scale_factor
+        scaled_y = dist_values.y * scale_factor
 
-        plt.plot(dist_values["x"], scaled_y)
+        plt.plot(dist_values.x, scaled_y)
 
     if lines: # plot array of lines, e.g. mean, median
         colours = plt.get_cmap("rainbow")
@@ -89,7 +90,7 @@ def _example_visualisation(cleaned_df: pd.DataFrame) -> None:
     max = simple_stats["max"]
     min = simple_stats["min"]
     mean = simple_stats["mean"]
-    std = normal_params["std"]
+    std = normal_params.std
 
     lines_to_include = {
         "mean": mean,
