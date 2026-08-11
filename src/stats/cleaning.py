@@ -60,7 +60,7 @@ def remove_records_containing(
 
     assert filter_conf.banned_txts, "Banned texts not specified in filter config!"
 
-    txt = r'\b(' + '|'.join(filter_conf.banned_txts) + r')\b' #regex to filter out banned texts as separate words only
+    txt = txt = rf"\b({'|'.join(filter_conf.banned_txts)})\b"
 
     # Param na unhandled so exceptions warn us of incomplete data
     df = df[~df['title'].str.contains(txt, case=filter_conf.ban_txt_case_sensitive)]
@@ -73,7 +73,7 @@ def conv_dates(df: pd.DataFrame) -> pd.DataFrame:
 
     df['sold_date'] = pd.to_datetime(df['sold_date'])
     return df
-
+    
 
 def set_date_as_index(df: pd.DataFrame) -> pd.DataFrame:
 
@@ -99,10 +99,3 @@ def sum_price_and_shipping(df: pd.DataFrame) -> pd.DataFrame:
     df["total_price"] = df["ship_price"] + df["price"]
 
     return df
-
-
-def clean_listings(df: pd.DataFrame) -> pd.DataFrame:
-    '''Call all the cleaning functions.'''
-
-    raise NotImplementedError
-
