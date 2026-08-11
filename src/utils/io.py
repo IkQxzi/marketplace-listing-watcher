@@ -79,42 +79,37 @@ def write_to_dir(content: str, dir: Path, file_ext: str) -> None:
         
     return
 
-def write_df_to_dir(df: DataFrame, dir: Path) -> None:
+def write_df_to_dir(df: DataFrame, dir: Path, include_index:bool) -> None:
     '''Write df to directory, creating dir if it does not exist.'''
 
     dir.mkdir(parents=True, exist_ok=True)
     df_path = (dir / get_timestamp()).with_suffix('.csv') 
 
-    df.to_csv(df_path, encoding='utf-8')
+    df.to_csv(df_path, encoding='utf-8', index=include_index)
 
     print(f'Saved df to path: {df_path}')
 
-def read_df_from_dir(directory:str, filename:str, append_extension:bool) -> DataFrame:
-    '''append_extension specifies whether a .csv extension needs to be added to the end of the filename'''
 
-    if append_extension: filetype = ".csv" 
-    else: filetype = ""
+def get_file_names_in_dir(dir: Path) -> list[str]:
+	return [item.name for item in dir.iterdir() if item.is_file()]
 
-    df_path = f"{directory}/{filename}{filetype}"
-
-    return pd.read_csv(df_path)
-
-def get_file_names_in_dir(directory:str) -> list:
-    filenames = []
-
-    dt = Path(directory)
-    for file in dt.iterdir():
-        if file.is_file():
-            filenames.append(file.name)
-
-    return filenames
-
-def read_multiple_df(directory:str) -> DataFrame:
+def read_multiple_df(directory:Path) -> DataFrame:
+    '''Takes all the CSVs in a directory and returns as one DataFrame.'''
 
     all_data = []
     filenames = get_file_names_in_dir(directory)
 
-    for file in filenames:
-        all_data.append(read_df_from_dir(directory, file, False))
+    for name in filenames:
+        file_path = directory / name
+        all_data.append(read_df_from_path(file_path))
 
     return pd.concat(all_data, ignore_index=True)
+
+def read_latest_df(directory:Path) -> DataFrame:
+    '''Takes the most recently saved CSV in a directory and returns DataFrame.'''
+
+    files = [f for f in directory.iterdir() if f.is_file()] #get all files
+
+    latest_file = max(files, key=lambda x: x.stat().st_mtime)
+    
+    return latest_file

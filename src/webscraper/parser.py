@@ -102,7 +102,7 @@ class ListingParser:
             # ive seen GB for phones, phone name, company name, condition, etc, in different orders so cant reliably parse it here
 
             item_dict = {
-                "full_name": name,
+                "title": name,
                 "url": url,
                 "id":id,
                 "price":price,
