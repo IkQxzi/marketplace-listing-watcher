@@ -1,6 +1,11 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "ebaymk2"
-version = "1.0.0"
+version = "0.1.0"
+requires-python = ">=3.12" 
 
 dependencies = [
     "playwright==1.59.0",
@@ -14,10 +19,9 @@ dependencies = [
     "click",
     "jupyter",
     "ipykernel",
-    "requests",
-    "pandas"
+    "scipy>=1.18.0",
+    "matplotlib>=3.11.1",
 ]
 
-[project.scripts]
-html2csv = "scripts.html2csv:main"
-prettify-html = "scripts.prettify_html:main"
+[tool.setuptools.packages.find]
+where = ["src"]
