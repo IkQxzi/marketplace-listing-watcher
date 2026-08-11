@@ -1,7 +1,6 @@
 '''Storing/retrieving stats data.'''
 
-from utils.io import write_df_to_dir, read_multiple_df
-from utils.misc import get_timestamp
+from utils.io import write_df_to_dir, read_multiple_df, read_latest_df
 from utils.config import TEMP_STATS_DIR
 
 import pandas as pd
@@ -12,13 +11,13 @@ def save_stats(df:pd.DataFrame, product_name:str, col:str) -> None:
     #TODO: decide properly on which stats to save here 
     #TODO: maybe pass directory here as well
 
-    data = df[col] #get specific column to save
+    data = df[[col]] #get specific column to save
 
     data["column_name"] = col
 
     file_path = TEMP_STATS_DIR / product_name
 
-    write_df_to_dir(data, file_path)
+    write_df_to_dir(data, file_path, False)
 
 
 def read_all_stats(product_name:str, col:str) -> pd.DataFrame:
@@ -37,7 +36,6 @@ def read_recent_stats(product_name:str) -> pd.DataFrame:
 
     directory = TEMP_STATS_DIR / product_name
     
-    data = read_multiple_df(directory)
-    data = data.sort_values(by="timestamp")
+    df = read_latest_df(directory)
 
-    return data.tail(1) #return first (most recent) row
+    return df #return first (most recent) row
