@@ -8,17 +8,19 @@ from pathlib import Path
 from typing import Any, Protocol
 
 from utils.io import write_to_dir, generate_log_path
-from api.auth import get_access_token
 from alerts.core import Alerter
-from .core import APIResponse
+from config.api import SEARCH_ENDPOINT
+from .auth import get_access_token
+from .core import SearchAPIResponse, SearchAPIConfig
 
 
-def log_response(api_response: APIResponse, active_dir: Path) -> None:
+def log_response(api_response: SearchAPIResponse, active_dir: Path) -> None:
     '''Log API response to two files: one for item summaries, one for metadata, using category counts as file names.'''
     
     item_dir = generate_log_path(
-        active_dir, api_resp.item_name, is_active=True, cat_id=api_resp.cat_id, cat_name=api_resp.cat_name
+        active_dir, api_response.q, is_active=True, cat_id=api_resp.inferred_cat_id, cat_name=api_resp.inferred_cat_name
         )
+    
     write_to_dir(api_resp.json_response, item_dir, file_ext='json')
 
 
@@ -49,27 +51,17 @@ class ListingSearcher:
 
 
     def get_listings(
-            self, access_token: str, item_name: str, limit: int = 50, category_id: int | None = None, 
-        ) -> APIResponse:
+            self, access_token: str, config: SearchAPIConfig
+        ) -> SearchAPIResponse:
 
         '''Query API (optionally restricting category) and return the JSON response.'''
-
-
-        params: dict[str, str | int] = {
-            'q': item_name, # parens + comma for or, spc for and
-            'limit': limit, # no. of items
-            'offset': 0
-        }
-
-        if category_id: 
-            params['category_ids'] = category_id
 
         headers = {
             'X-EBAY-C-MARKETPLACE-ID': 'EBAY_GB',
             'Authorization': f'Bearer {access_token}'
         }
 
-        r = requests.get(url=SEARCH_ENDPOINT, params=params, headers=headers, timeout=10)
+        r = requests.get(url=SEARCH_ENDPOINT, params=config.to_dict(), headers=headers, timeout=10)
         r_json = r.json()
         
         try:
@@ -88,7 +80,7 @@ class ListingSearcher:
         for cat_id_str, cat_count in cat_counts.most_common():
             print(f'{(cat_id_str)}/{cat_mappings[int(cat_id_str)]}: {cat_count}')
 
-        return APIResponse(r_json, item_name, cat_id, cat_name)
+        return SearchAPIResponse(r_json, config.q, cat_id, cat_name)
 
 
 # Example usage
@@ -96,19 +88,21 @@ if __name__ == '__main__':
 
     from config.dirs import ACTIVE_DIR, TEMP_ACTIVE_DIR
     from config.alerts import DISCORD_WEBHOOK_URL
-    from config.api import SEARCH_ENDPOINT, APP_ID, CERT_ID, REFRESH_TOKEN
+    from config.api import APP_ID, CERT_ID, REFRESH_TOKEN
     from alerts.discord import DiscordBot
 
     assert REFRESH_TOKEN and APP_ID and CERT_ID, "API credentials missing from .env"
     assert DISCORD_WEBHOOK_URL, "Discord webhook URL missing from .env"
 
-    item = 'iphone 16'
+    iphone_16_basic_conf = SearchAPIConfig(
+        q='iphone 16'
+        )
 
     disc_bot = DiscordBot(DISCORD_WEBHOOK_URL)
 
     access_token = get_access_token(REFRESH_TOKEN, APP_ID, CERT_ID)
     searcher = ListingSearcher(disc_bot)
 
-    api_resp = searcher.get_listings(access_token, item)
+    api_resp = searcher.get_listings(access_token, iphone_16_basic_conf)
     log_response(api_resp, TEMP_ACTIVE_DIR)
 

@@ -7,4 +7,4 @@ from .dirs import ENV_PATH
 
 load_dotenv(ENV_PATH)
 
-DISCORD_WEBHOOK_URL = os.getenv('webhook_url')
+DISCORD_WEBHOOK_URL = os.getenv('discord_webhook_url')
