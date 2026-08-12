@@ -9,7 +9,7 @@ CONFIG_DIR = ROOT_DIR / "configs"
 LOG_DIR = ROOT_DIR / "logs"
 SOLD_DIR = LOG_DIR / "sold"
 ACTIVE_DIR = LOG_DIR / "active" # /search/catId_catName
-ENV_PATH = ROOT_DIR / "used.env"
+ENV_PATH = ROOT_DIR / ".env"
 
 # Temporary
 TEMP_LOG_DIR = ROOT_DIR / "temp_logs"
