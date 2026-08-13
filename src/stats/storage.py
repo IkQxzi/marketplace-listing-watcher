@@ -1,7 +1,7 @@
 '''Storing/retrieving stats data.'''
 
 from utils.io import write_df_to_dir, read_multiple_df, read_latest_df
-from utils.config import TEMP_STATS_DIR
+from config.dirs import TEMP_STATS_DIR
 
 import pandas as pd
 

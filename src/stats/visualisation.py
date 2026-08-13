@@ -37,7 +37,7 @@ def show_price_hist(
         df: pd.DataFrame, 
         bin_size: float | None = None, 
         dist_values: DistributionPoints | None = None,
-        lines: dict | None = None
+        lines: dict[str, float] | None = None
         ) -> None:
     
     '''
