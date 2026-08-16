@@ -93,6 +93,8 @@ class SearchAPIConfig(BaseModel):
             except ValueError as e:
                 raise e
 
+        raise NotImplementedError("Conversion of all param types to str not implemented yet.")
+
 
     def to_dict(self) -> dict[str, Any]:
         '''Convert params to dict format Search Endpoint expects.'''
