@@ -21,6 +21,7 @@ dependencies = [
     "ipykernel",
     "scipy>=1.18.0",
     "matplotlib>=3.11.1",
+    "pydantic",
 ]
 
 [tool.setuptools.packages.find]
