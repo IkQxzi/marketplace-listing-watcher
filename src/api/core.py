@@ -1,7 +1,11 @@
 '''Functionality and base classes for any part of API.'''
 
+from pydantic import BaseModel
+
 from dataclasses import dataclass
-from typing import Any, Literal
+from typing import Any, Literal, get_args
+from datetime import datetime
+
 import re
 
 from utils.misc import snake_to_camel_case
@@ -14,8 +18,7 @@ class SearchAPIResponse:
     inferred_cat_name: str
 
 
-@dataclass(kw_only=True, frozen=True)
-class SearchAPIConfig:
+class SearchAPIConfig(BaseModel):
     '''
     Config for Search Endpoint.\n
 
@@ -34,14 +37,19 @@ class SearchAPIConfig:
     search_in_description: bool | None = None
     epid: int | None = None # eBay Product ID
 
-    # ---------- CATEGORY ----------
-    category_ids: list[int] | None = None
-    exclude_category_ids: list[str] | None = None
-
     # ---------- PRICE ----------
     # See docstring for formatting rules
     price: str | None = None
     price_currency: str = 'GBP'
+
+    # ---------- DATE ----------
+    # ISO date format
+    item_end_date: str | None = None
+    item_start_date: str | None = None
+
+    # ---------- CATEGORY ----------
+    category_ids: list[int] | None = None
+    exclude_category_ids: list[str] | None = None
 
     # ---------- BUYING FORMAT ----------
     # See docstring for formatting rules
@@ -50,34 +58,16 @@ class SearchAPIConfig:
 
     # ---------- CONDITION ----------
     # https://developer.ebay.com/api-docs/sell/static/metadata/condition-id-values.html
-    conditions: Literal['NEW', 'USED', 'UNSPECIFIED'] | None = None
+    conditions: list[Literal['NEW', 'USED', 'UNSPECIFIED']] | None = None
     condition_ids: int | None = None
 
-    # ---------- DATE ----------
-    # ISO date format
-    item_end_date: str | None = None
+    # ---------- SELLER ----------
+    seller_account_types: Literal["INDIVIDUAL", "BUSINESS"] | None = None
 
     # ---------- REGION ----------
     # ISO 3166
     delivery_country: str = 'GB'
     item_location_country: str = 'GB'
-
-
-    def _validate_bounded_param(self, filter: str) -> None:
-        '''Check a param (namely price, bid_count) follows strict API format.'''
-
-        filter_parts = filter.split('..')
-
-        if len(filter_parts) >= 3:
-            raise ValueError(f"Too many ellipses, invalid: {filter}")
-
-        if any(part and not part.isdigit() for part in filter_parts):
-            raise ValueError(f"Expected up to 2 ints separated by '..', not {filter}")
-
-        # Allowing equal bounds for precise price-matching
-        if all(filter_parts) and int(filter_parts[0]) > int(filter_parts[1]):
-            raise ValueError(f"Lower bound cannot be greater than upper bound, invalid: {filter}\n"
-                             f"{filter_parts[0]} is not less than {filter_parts[1]}")
 
 
     def __post_init__(self):
@@ -90,6 +80,19 @@ class SearchAPIConfig:
         if self.price:
             self._validate_bounded_param(self.price)
 
+        # Check dates are ISO format
+        if self.item_start_date:
+            try:
+                datetime.fromisoformat(self.item_start_date)
+            except ValueError as e:
+                raise e
+
+        if self.item_end_date:
+            try:
+                datetime.fromisoformat(self.item_end_date)
+            except ValueError as e:
+                raise e
+
 
     def to_dict(self) -> dict[str, Any]:
         '''Convert params to dict format Search Endpoint expects.'''
@@ -97,4 +100,24 @@ class SearchAPIConfig:
         return {
             snake_to_camel_case(k): v for k, v in self.__dict__.items() if v
         }
+    
+
+    def _validate_bounded_param(self, param: str) -> None:
+        '''
+        Check a param (namely price, bid_count) follows strict API format.\n
+        Raise error if not.
+        '''
+
+        param_parts = param.split('..')
+
+        if len(param_parts) >= 3:
+            raise ValueError(f"Too many ellipses, invalid: {param}")
+
+        if any(part and not part.isdigit() for part in param_parts):
+            raise ValueError(f"Expected up to 2 ints separated by '..', not {param}")
+
+        # Allowing equal bounds for precise price-matching
+        if all(param_parts) and int(param_parts[0]) > int(param_parts[1]):
+            raise ValueError(f"Lower bound cannot be greater than upper bound, invalid: {param}\n"
+                             f"{param_parts[0]} is not less than {param_parts[1]}")
         

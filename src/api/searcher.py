@@ -95,7 +95,8 @@ if __name__ == '__main__':
     assert DISCORD_WEBHOOK_URL, "Discord webhook URL missing from .env"
 
     iphone_16_basic_conf = SearchAPIConfig(
-        q='iphone 16'
+        q='iphone 16',
+        conditions = ['NEW', 'USED']
         )
 
     disc_bot = DiscordBot(DISCORD_WEBHOOK_URL)
