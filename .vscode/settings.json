@@ -1,0 +1,18 @@
+{
+    "search.exclude": {
+        "**/temp_logs": false
+    },
+
+  // Ruff
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": "explicit",
+      "source.fixAll": "explicit"
+    }
+  },
+
+  "python.defaultInterpreterPath": ".venv"
+
+}

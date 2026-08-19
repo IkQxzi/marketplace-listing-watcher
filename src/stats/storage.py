@@ -1,17 +1,18 @@
-'''Storing/retrieving stats data.'''
+"""Storing/retrieving stats data."""
 
 from utils.io import write_df_to_dir, read_multiple_df, read_latest_df
 from config.dirs import TEMP_STATS_DIR
 
 import pandas as pd
 
-def save_stats(df:pd.DataFrame, product_name:str, col:str) -> None:
-    '''Takes a dataframe and saves the summary stats for it in a CSV.'''
 
-    #TODO: decide properly on which stats to save here 
-    #TODO: maybe pass directory here as well
+def save_stats(df: pd.DataFrame, product_name: str, col: str) -> None:
+    """Takes a dataframe and saves the summary stats for it in a CSV."""
 
-    data = df[[col]] #get specific column to save
+    # TODO: decide properly on which stats to save here
+    # TODO: maybe pass directory here as well
+
+    data = df[[col]]  # get specific column to save
 
     data["column_name"] = col
 
@@ -20,8 +21,8 @@ def save_stats(df:pd.DataFrame, product_name:str, col:str) -> None:
     write_df_to_dir(data, file_path, False)
 
 
-def read_all_stats(product_name:str, col:str) -> pd.DataFrame:
-    '''Takes a product and column name and returns DF with all stats'''
+def read_all_stats(product_name: str, col: str) -> pd.DataFrame:
+    """Takes a product and column name and returns DF with all stats"""
 
     directory = TEMP_STATS_DIR / product_name
 
@@ -31,11 +32,11 @@ def read_all_stats(product_name:str, col:str) -> pd.DataFrame:
     return data
 
 
-def read_recent_stats(product_name:str) -> pd.DataFrame:
-    '''Takes a product name and returns DF with most recent stats'''
+def read_recent_stats(product_name: str) -> pd.DataFrame:
+    """Takes a product name and returns DF with most recent stats"""
 
     directory = TEMP_STATS_DIR / product_name
-    
+
     df = read_latest_df(directory)
 
-    return df #return first (most recent) row
+    return df  # return first (most recent) row

@@ -1,4 +1,4 @@
-'''Functionality and base classes for any part of API.'''
+"""Functionality and base classes for any part of API."""
 
 from pydantic import BaseModel
 
@@ -10,6 +10,7 @@ import re
 
 from utils.misc import snake_to_camel_case
 
+
 @dataclass
 class SearchAPIResponse:
     json_response: Any
@@ -19,7 +20,7 @@ class SearchAPIResponse:
 
 
 class SearchAPIConfig(BaseModel):
-    '''
+    """
     Config for Search Endpoint.\n
 
     Note that bools can only be True or None, not False.\n
@@ -30,17 +31,17 @@ class SearchAPIConfig(BaseModel):
     at least 1: '1..'\n
     up to 5: '..5'\n
     1 to 5: '1..5'\n
-    '''
+    """
 
     # ---------- QUERY ----------
-    q: str # Query (keywords)
+    q: str  # Query (keywords)
     search_in_description: bool | None = None
-    epid: int | None = None # eBay Product ID
+    epid: int | None = None  # eBay Product ID
 
     # ---------- PRICE ----------
     # See docstring for formatting rules
     price: str | None = None
-    price_currency: str = 'GBP'
+    price_currency: str = "GBP"
 
     # ---------- DATE ----------
     # ISO date format
@@ -54,11 +55,13 @@ class SearchAPIConfig(BaseModel):
     # ---------- BUYING FORMAT ----------
     # See docstring for formatting rules
     bid_count: str | None = None
-    buying_options: Literal['FIXED_PRICE', 'AUCTION', 'BEST_OFFER', 'CLASSIFIED_AD'] | None = None
+    buying_options: (
+        Literal["FIXED_PRICE", "AUCTION", "BEST_OFFER", "CLASSIFIED_AD"] | None
+    ) = None
 
     # ---------- CONDITION ----------
     # https://developer.ebay.com/api-docs/sell/static/metadata/condition-id-values.html
-    conditions: list[Literal['NEW', 'USED', 'UNSPECIFIED']] | None = None
+    conditions: list[Literal["NEW", "USED", "UNSPECIFIED"]] | None = None
     condition_ids: int | None = None
 
     # ---------- SELLER ----------
@@ -66,9 +69,8 @@ class SearchAPIConfig(BaseModel):
 
     # ---------- REGION ----------
     # ISO 3166
-    delivery_country: str = 'GB'
-    item_location_country: str = 'GB'
-
+    delivery_country: str = "GB"
+    item_location_country: str = "GB"
 
     def __post_init__(self):
 
@@ -93,24 +95,22 @@ class SearchAPIConfig(BaseModel):
             except ValueError as e:
                 raise e
 
-        raise NotImplementedError("Conversion of all param types to str not implemented yet.")
-
+        raise NotImplementedError(
+            "Conversion of all param types to str not implemented yet."
+        )
 
     def to_dict(self) -> dict[str, Any]:
-        '''Convert params to dict format Search Endpoint expects.'''
+        """Convert params to dict format Search Endpoint expects."""
 
-        return {
-            snake_to_camel_case(k): v for k, v in self.__dict__.items() if v
-        }
-    
+        return {snake_to_camel_case(k): v for k, v in self.__dict__.items() if v}
 
     def _validate_bounded_param(self, param: str) -> None:
-        '''
+        """
         Check a param (namely price, bid_count) follows strict API format.\n
         Raise error if not.
-        '''
+        """
 
-        param_parts = param.split('..')
+        param_parts = param.split("..")
 
         if len(param_parts) >= 3:
             raise ValueError(f"Too many ellipses, invalid: {param}")
@@ -120,6 +120,7 @@ class SearchAPIConfig(BaseModel):
 
         # Allowing equal bounds for precise price-matching
         if all(param_parts) and int(param_parts[0]) > int(param_parts[1]):
-            raise ValueError(f"Lower bound cannot be greater than upper bound, invalid: {param}\n"
-                             f"{param_parts[0]} is not less than {param_parts[1]}")
-        
+            raise ValueError(
+                f"Lower bound cannot be greater than upper bound, invalid: {param}\n"
+                f"{param_parts[0]} is not less than {param_parts[1]}"
+            )

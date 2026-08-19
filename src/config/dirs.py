@@ -1,4 +1,4 @@
-'''Directories.'''
+"""Directories."""
 
 from pathlib import Path
 
@@ -8,7 +8,7 @@ ROOT_DIR = Path(__file__).parent.parent.parent
 CONFIG_DIR = ROOT_DIR / "configs"
 LOG_DIR = ROOT_DIR / "logs"
 SOLD_DIR = LOG_DIR / "sold"
-ACTIVE_DIR = LOG_DIR / "active" # /search/catId_catName
+ACTIVE_DIR = LOG_DIR / "active"  # /search/catId_catName
 ENV_PATH = ROOT_DIR / ".env"
 
 # Temporary

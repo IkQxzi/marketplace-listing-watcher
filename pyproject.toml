@@ -26,3 +26,57 @@ dependencies = [
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.ruff]
+target-version = "py314"
+
+# 88 characters is the standard (matching Black).
+line-length = 88
+
+# Exclude common directories
+exclude = [
+    ".git",
+    ".venv",
+    "__pycache__",
+    "build",
+    "dist",
+]
+
+[tool.ruff.format]
+# Standard layout settings
+quote-style = "double"
+indent-style = "space"
+# Formats Python code snippets embedded in docstrings
+docstring-code-format = true
+
+[tool.ruff.lint]
+# Selected rule sets:
+select = [
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "F",      # Pyflakes (unused imports, undefined variables)
+    "I",      # isort (import sorting)
+    "UP",     # pyupgrade (auto-upgrades old syntax to modern Python)
+    "B",      # flake8-bugbear (catches subtle bugs and design flaws)
+    "SIM",    # flake8-simplify (suggests simpler, more readable Python idioms)
+    "RUF",    # Ruff-specific rules
+]
+
+ignore = [
+    # Handled automatically by the formatter, so we disable the linter warning
+    "E501",   # line-too-long
+]
+
+[tool.ruff.lint.isort]
+# Combines `from foo import a, b` onto one line if they fit
+combine-as-imports = true
+
+[tool.ruff.lint.per-file-ignores]
+# Ignore `B008` (function call in default argument) for FastAPI/Pydantic dependencies
+# e.g., `def get_item(token: str = Depends(...)):` or `Field(...)`
+"**/*" = ["B008"]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.16.3",
+]
