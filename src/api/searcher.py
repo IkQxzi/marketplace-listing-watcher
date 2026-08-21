@@ -1,6 +1,7 @@
 """Polling API for active listings."""
 
 import requests
+
 """Polling API for active listings."""
 
 from collections import Counter, defaultdict
@@ -13,11 +14,8 @@ from config.api import SEARCH_ENDPOINT
 from utils.io import generate_log_path, write_to_dir
 
 from .auth import get_access_token
-from .core import SearchAPIConfig, SearchEndpointResponse
+from .core import SearchEndpointResponse
 
-
-def log_response(api_response: SearchAPIResponse, active_dir: Path) -> None:
-    """Log API response to two files: one for item summaries, one for metadata, using category counts as file names."""
 
 def log_response(api_response: SearchEndpointResponse, active_dir: Path) -> None:
     """Log API response to two files: one for item summaries, one for metadata, using category counts as file names."""
@@ -26,30 +24,17 @@ def log_response(api_response: SearchEndpointResponse, active_dir: Path) -> None
         active_dir,
         api_response.q,
         is_active=True,
-        cat_id=api_resp.inferred_cat_id,
-        cat_name=api_resp.inferred_cat_name,
+        cat_id=api_response.inferred_cat_id,
+        cat_name=api_response.inferred_cat_name,
     )
 
-    write_to_dir(api_resp.json_response, item_dir, file_ext="json")
-        active_dir,
-        api_response.q,
-        is_active=True,
-        cat_id=api_resp.inferred_cat_id,
-        cat_name=api_resp.inferred_cat_name,
-    )
-
-    write_to_dir(api_resp.json_response, item_dir, file_ext="json")
+    write_to_dir(api_response.json_response, item_dir, file_ext="json")
 
 
 class ListingSearcher:
     def __init__(self, alerter: Alerter) -> None:
         self.alerter = alerter
 
-    def _parse_categories(
-        self, item_summaries: list[dict]
-    ) -> tuple[Counter[str], defaultdict[int, str]]:
-        """Parse categories of items,
-        and return the counts of each category ID and the associated category name."""
     def _parse_categories(
         self, item_summaries: list[dict]
     ) -> tuple[Counter[str], defaultdict[int, str]]:
@@ -76,9 +61,6 @@ class ListingSearcher:
 
     def get_listings(
         self, access_token: str, config: SearchAPIConfig
-    ) -> SearchAPIResponse:
-        """Query API (optionally restricting category) and return the JSON response."""
-        self, access_token: str, config: SearchAPIConfig
     ) -> SearchEndpointResponse:
         """Query API (optionally restricting category) and return the JSON response."""
 
@@ -97,7 +79,6 @@ class ListingSearcher:
         )
         r_json = r.json()
 
-
         try:
             item_summaries: list[dict] = r.json()["itemSummaries"]
             item_summaries: list[dict] = r.json()["itemSummaries"]
@@ -105,7 +86,6 @@ class ListingSearcher:
             print(f"KeyError; r_json: {r_json}")
             print(f"KeyError; r_json: {r_json}")
             exit()
-
 
         cat_counts, cat_mappings = self._parse_categories(item_summaries)
 
