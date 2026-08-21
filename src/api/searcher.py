@@ -103,6 +103,8 @@ class ListingSearcher:
 
 # Example usage
 if __name__ == "__main__":
+    raise NotImplementedError
+
     from config.dirs import ACTIVE_DIR, TEMP_ACTIVE_DIR
 if __name__ == "__main__":
     from alerts.discord import DiscordBot

@@ -1,9 +1,9 @@
 """Functionality and base classes for any part of API."""
 
-from types import MappingProxyType
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Annotated, Any, Literal
+from collections.abc import Mapping
 from abc import ABC, abstractmethod
 
 from pydantic import BaseModel, Field, model_validator, field_validator
@@ -17,6 +17,58 @@ class SearchEndpointResponse:
     q: str
     inferred_cat_id: int
     inferred_cat_name: str
+
+
+def _pipe_join_list(lst: list[Any]) -> str:
+    """Join a list (any type) with pipes."""
+    return "|".join(str(s) for s in lst)
+
+
+# Generic type to know when joining is not required
+# TODO: use in _comma_join_dict()
+type _Singular = str | int | float | bool
+
+
+def _comma_join_dict(dct: dict) -> str:
+    """ "Join a dict with colons between keys & values, and commas between entries."""
+    return ",".join(
+        f"{k}:{str(v).lower()}" if isinstance(v, bool) else f"{k}:{v}"
+        for k, v in dct.items()
+    )
+
+
+def _api_format_params(instance: object) -> str:
+    """Format the attributes of an instance into 1 string."""
+
+    api_dict: dict[str, str] = {}
+
+    for attr, val in instance.__dict__.items():
+        if isinstance(val, SearchEndpointParam):
+            api_dict[attr] = val.to_param()
+
+            print(f"{attr}: {val.to_param()}")
+            # exit()
+
+        elif isinstance(val, list):
+            api_dict[attr] = "{" + _pipe_join_list(val) + "}"
+
+        elif isinstance(val, dict):
+            api_dict[attr] = _comma_join_dict(val)
+
+        elif isinstance(val, bool):
+            api_dict[attr] = str(val).lower()  # API expects 'true', not 'True'
+
+        elif isinstance(val, str | int | float):
+            api_dict[attr] = str(val)  # TODO: Maybe can skip casting str to str?
+
+        elif not val:
+            pass
+
+        else:
+            raise NotImplementedError(f"Unexpected type {type(val)}: {attr}: {val}")
+
+    # Colon join everything
+    return _comma_join_dict(api_dict)
 
 
 class SearchEndpointParam(ABC, BaseModel):
@@ -47,7 +99,17 @@ class RangeParam[T: (int, datetime)](SearchEndpointParam):
         return self
 
     def to_param(self) -> str:
-        raise NotImplementedError
+        "Returns format: [lower_bd..upper_bd]"
+
+        param_str = ".."
+
+        if self.lower_bd:
+            param_str = f"{self.lower_bd}{param_str}"
+
+        if self.upper_bd:
+            param_str = f"{param_str}{self.upper_bd}"
+
+        return f"[{param_str}]"
 
 
 class IntRange(RangeParam[int]):
@@ -172,7 +234,8 @@ class SearchEndpointFilter(SearchEndpointParam):
         return self
 
     def to_param(self) -> str:
-        raise NotImplementedError
+
+        return _api_format_params(self)
 
 
 class SearchEndpointQuery(SearchEndpointParam):
@@ -190,6 +253,7 @@ class SearchEndpointQuery(SearchEndpointParam):
     def to_param(self) -> str:
         raise NotImplementedError
 
+    # Ensure len(q) <= 100
     # AND: "kw1 kw2"
     # OR: "(kw1, kw2)"
 
