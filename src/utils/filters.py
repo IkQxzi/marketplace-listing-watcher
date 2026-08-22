@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 
-from config.dirs import FILTERS_DIR
+from config.dirs import ACTIVE_DIR
 from config.filters import LLMOutputFilters
 from utils.io import read_json, write_json
 
@@ -12,7 +12,7 @@ from utils.io import read_json, write_json
 def get_filters(item_name: str) -> LLMOutputFilters:
     """Fetches filters from item name, either from LLM API or file"""
 
-    filter_path = FILTERS_DIR / f"{item_name}.json"
+    filter_path = ACTIVE_DIR / item_name / "filters.json"
 
     if filter_path.exists():
         return LLMOutputFilters.model_validate(read_json(filter_path))
@@ -23,7 +23,7 @@ def get_filters(item_name: str) -> LLMOutputFilters:
 def _has_active_filters(item_name: str) -> bool:
     """Returns whether a specific item has active filters or not."""
 
-    filter_path = FILTERS_DIR / f"{item_name}.json"
+    filter_path = ACTIVE_DIR / item_name / "filters.json"
 
     return filter_path.exists()
 
@@ -42,7 +42,7 @@ def create_active_filters(item_name: str) -> LLMOutputFilters:
     prompt = create_filter_prompt(item_name)
 
     response = client.models.generate_content(
-        model="gemini-3.5-flash-lite", #lightest model to ensure low usage
+        model="gemini-3.5-flash", #lightest model to ensure low usage
         contents=prompt,
         config=types.GenerateContentConfig(
             response_mime_type="application/json",
@@ -57,7 +57,7 @@ def create_active_filters(item_name: str) -> LLMOutputFilters:
     filters = LLMOutputFilters.model_validate_json(response.text)
 
     #save to file
-    save_path = FILTERS_DIR / f"{item_name}.json"
+    save_path = ACTIVE_DIR / item_name / "filters.json"
     write_json(data=filters.model_dump(), path=save_path)
 
     return filters

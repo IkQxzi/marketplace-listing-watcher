@@ -121,6 +121,7 @@ def read_latest_df(directory: Path) -> DataFrame:
 
     return latest_file
 
+
 def read_json(path: Path) -> Any:
     '''Takes a path and returns the JSON content at that path.'''
 
