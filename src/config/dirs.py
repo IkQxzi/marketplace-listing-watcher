@@ -2,7 +2,6 @@
 
 from pathlib import Path
 
-
 ROOT_DIR = Path(__file__).parent.parent.parent
 
 CONFIG_DIR = ROOT_DIR / "configs"
@@ -16,3 +15,6 @@ TEMP_LOG_DIR = ROOT_DIR / "temp_logs"
 TEMP_SOLD_DIR = TEMP_LOG_DIR / "sold"
 TEMP_ACTIVE_DIR = TEMP_LOG_DIR / "active"
 TEMP_STATS_DIR = TEMP_LOG_DIR / "stats"
+
+#Keyword filtering system
+FILTERS_DIR = ACTIVE_DIR / "filters"

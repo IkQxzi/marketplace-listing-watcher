@@ -11,6 +11,8 @@ from pathlib import Path
 
 from utils.misc import get_timestamp
 
+from typing import Any
+
 
 # TODO: Rewrite this to not require is_active flag (pass in sold/active as log_dir)
 def generate_log_path(
@@ -118,3 +120,24 @@ def read_latest_df(directory: Path) -> DataFrame:
     latest_file = max(files, key=lambda x: x.stat().st_mtime)
 
     return latest_file
+
+def read_json(path: Path) -> Any:
+    '''Takes a path and returns the JSON content at that path.'''
+
+    if path.exists():
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        return data
+
+    else:
+        raise FileNotFoundError
+
+
+def write_json(data:Any, path:Path) -> None:
+    """Takes a directory and JSON content, and writes it to the directory"""
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2)
+
