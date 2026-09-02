@@ -40,18 +40,18 @@ def test_int_range():
 # Manual tests
 
 
-def _test_filter_parametrisation():
+def test_filter_parametrisation():
     filter_instance = SearchEndpointFilter(**EXAMPLE_FILTER_PARAMS)
 
     print(f"\nFilter: {filter_instance.to_param()}\n")
 
 
-def _test_payload_serialisation():
+def test_payload_serialisation():
 
     payload = SearchEndpointPayload(**EXAMPLE_PAYLOAD_PARAMS)
     print(f"\nPayload: {payload.to_payload()}\n")
 
 
 if __name__ == "__main__":
-    _test_filter_parametrisation()
-    _test_payload_serialisation()
+    test_filter_parametrisation()
+    test_payload_serialisation()
