@@ -6,7 +6,8 @@ from typing import Annotated, Any, Literal
 from collections.abc import Mapping
 from abc import ABC, abstractmethod
 
-from pydantic import BaseModel, Field, model_validator, field_validator
+from pydantic import BaseModel, Field, model_validator, field_validator, ConfigDict
+from pydantic.alias_generators import to_camel
 
 from utils.misc import snake_to_camel_case
 
@@ -14,68 +15,117 @@ from utils.misc import snake_to_camel_case
 @dataclass
 class SearchEndpointResponse:
     json_response: Any
-    q: str
+    q: SearchEndpointQuery
     inferred_cat_id: int
     inferred_cat_name: str
 
 
-def _pipe_join_list(lst: list[Any]) -> str:
-    """Join a list (any type) with pipes."""
-    return "|".join(str(s) for s in lst)
+type _Singular = str | int | float | bool
+
+
+def _join_list(items: list[str] | list[int | float]) -> str:
+    """
+    Join a list (of uniform type) according to Search Endpoint format:
+    list[str]: pipe separated, wrapped in curly braces.
+    list[int]: comma separated
+    with pipes and wrap it in curly braces.
+    """
+
+    if any(type(s) is not type(items[0]) for s in items):
+        raise ValueError(f"Elements in list are not a uniform type!\nlist:{items}")
+
+    if type(items[0]) is str:
+        return "{" + "|".join(s for s in items) + "}"  # type: ignore
+
+    if type(items[0]) in [int, float]:
+        return ",".join(str(s) for s in items)
+
+    raise ValueError(
+        f"List contains unsupported type. Encountered type: {type(items[0])} {type(items[0]) is int}"
+    )
 
 
 # Generic type to know when joining is not required
 # TODO: use in _comma_join_dict()
-type _Singular = str | int | float | bool
+# not useful bc strs need to be curly wrapped but not ints,
+# going to leave here jic
+type _Singular_ = str | int | float | bool
 
 
-def _comma_join_dict(dct: dict) -> str:
-    """ "Join a dict with colons between keys & values, and commas between entries."""
-    return ",".join(
-        f"{k}:{str(v).lower()}" if isinstance(v, bool) else f"{k}:{v}"
-        for k, v in dct.items()
-    )
+def _join_dict_with_char(dct: dict, char: str = "&") -> str:
+    """Join a dict with colons between keys & values, and specified char between entries."""
+
+    formatted = {}
+
+    for k, v in dct.items():
+        if isinstance(v, list):
+            formatted[k] = _join_list(v)
+        elif isinstance(v, bool):
+            formatted[k] = str(v).lower()  # API expects 'true', not 'True'
+        else:
+            formatted[k] = str(v)
+
+    return char.join(f"{k}:{v}" for k, v in formatted.items())
 
 
-def _api_format_params(instance: object) -> str:
+# TODO: Why note use __dict__?
+def _api_format_params(
+    instance: object, dict_join_char: str = "&", return_dict: bool = False
+) -> str | dict[str, str]:
     """Format the attributes of an instance into 1 string."""
+
+    if dict_join_char != "&" and return_dict:
+        raise ValueError(
+            "Tried to join dict with a char but also specified to return dict instead of str."
+        )
 
     api_dict: dict[str, str] = {}
 
-    for attr, val in instance.__dict__.items():
+    # Attr names or aliases
+    attr_dict = instance.__dict__
+
+    # If instance is a param obj,
+    # use aliases instead of internal attr names
+    if isinstance(instance, SearchEndpointParam):
+        for key in api_dict.copy():
+            alias = instance.__class__.model_fields[key].alias
+            if alias:
+                api_dict[alias] = api_dict.pop(key)
+
+    for attr, val in attr_dict.items():
+        if not val:  # Can omit None items in API
+            continue
+
         if isinstance(val, SearchEndpointParam):
+            # Can't use recursion because SearchEndointQuery has special list joining rules
             api_dict[attr] = val.to_param()
 
-            print(f"{attr}: {val.to_param()}")
-            # exit()
-
         elif isinstance(val, list):
-            api_dict[attr] = "{" + _pipe_join_list(val) + "}"
+            api_dict[attr] = _join_list(val)
 
         elif isinstance(val, dict):
-            api_dict[attr] = _comma_join_dict(val)
+            api_dict[attr] = _join_dict_with_char(val)
 
         elif isinstance(val, bool):
             api_dict[attr] = str(val).lower()  # API expects 'true', not 'True'
 
         elif isinstance(val, str | int | float):
-            api_dict[attr] = str(val)  # TODO: Maybe can skip casting str to str?
-
-        elif not val:
-            pass
+            api_dict[attr] = str(val)
 
         else:
             raise NotImplementedError(f"Unexpected type {type(val)}: {attr}: {val}")
 
-    # Colon join everything
-    return _comma_join_dict(api_dict)
+    if return_dict:
+        return api_dict
+
+    return _join_dict_with_char(api_dict, dict_join_char)
 
 
 class SearchEndpointParam(ABC, BaseModel):
     @abstractmethod
     def to_param(self) -> str:
         """Convert class to param format Search Endpoint expects."""
-        ...
+        _api_format_params(self)
 
 
 class RangeParam[T: (int, datetime)](SearchEndpointParam):
@@ -161,7 +211,13 @@ _CONDITION_ID_MAP: dict[ConditionName, int] = {
 
 
 class SearchEndpointFilter(SearchEndpointParam):
-    # Some conditions unique to 'apparel' category omitted
+    """
+    Filters which are used by SearchEndpointPayload.\n
+    Some conditions unique to the 'apparel' category have been omitted.
+    """
+
+    # TODO: check that I can still instantiate by name and not by alias
+    model_config = ConfigDict(alias_generator=to_camel, serialize_by_alias=True)
 
     # ---------- QUERY SETTINGS ----------
     search_in_description: Literal[True] | None = None
@@ -175,7 +231,9 @@ class SearchEndpointFilter(SearchEndpointParam):
         None  # TODO: pipe separate
     )
     # Converted to ConditionIds for API
-    precise_conditions: list[ConditionName] | None = None  # TODO: convert to id
+    precise_conditions: Annotated[
+        list[ConditionName] | None, Field(serialization_alias="ConditionIds")
+    ] = None  # TODO: convert to id
 
     # ---------- BUYING FORMAT ----------
     # See docstring for formatting rules
@@ -208,13 +266,6 @@ class SearchEndpointFilter(SearchEndpointParam):
         if self.conditions and self.precise_conditions:
             raise ValueError("Use only one of: conditions, precise_conditions.")
 
-        # start: between 2 - 3 aug
-        # end: between 4-5 aug
-
-        # invalid: start 3-4 aug, end 1-2 aug
-        # invalid: start 3..aug, end ..2 aug
-        # start: ..5 aug, end
-
         if (
             self.item_start_date
             and self.item_end_date
@@ -235,7 +286,7 @@ class SearchEndpointFilter(SearchEndpointParam):
 
     def to_param(self) -> str:
 
-        return _api_format_params(self)
+        return _api_format_params(self, dict_join_char=",")
 
 
 class SearchEndpointQuery(SearchEndpointParam):
@@ -251,11 +302,15 @@ class SearchEndpointQuery(SearchEndpointParam):
         return v
 
     def to_param(self) -> str:
-        raise NotImplementedError
+        if self.join_method == "AND":
+            return " ".join(self.q)
 
-    # Ensure len(q) <= 100
-    # AND: "kw1 kw2"
-    # OR: "(kw1, kw2)"
+        if self.join_method == "OR":
+            return (
+                "(" + ", ".join(self.q) + ")"
+            )  # Has a space as well as comma in docs for some reason
+
+        raise ValueError()
 
 
 class SearchEndpointPayload(BaseModel):
@@ -271,13 +326,13 @@ class SearchEndpointPayload(BaseModel):
     # TODO: eg ...
     # Get by ...
     aspect_filter: dict[str, str | int] | None = None
-    auto_correct: Literal["Keyword"] | None = None
+    # Search Endpoint requires this to be wrapped in square brackets for ragebait reasons
+    auto_correct: Literal["KEYWORD"] | None = None
     category_ids: list[int] | None = None
     epid: int | None = None  # eBay Product ID
     gtin: int | None = None  # UPC, EAN, ISBN
     limit: Annotated[int, Field(ge=1, le=200)] = 50
-    offset: int = 0  # Must be a perfect divisor of limit
-    # TODO: validate perfect divisor
+    offset: int = 0
 
     # TODO: link to thing
     fieldgroups: Literal[
@@ -287,5 +342,34 @@ class SearchEndpointPayload(BaseModel):
         "EXTENDED",
         "MATCHING_ITEMS",
         "FULL",
-    ] = "MATCHING_ITEMS"
+    ] = "MATCHING_ITEMS"  # Maybe set to None
     filter: SearchEndpointFilter | None = None
+
+    # Maybe offset, limit will have an issue
+    # See: https://developer.ebay.com/develop/api/buy/browse_api#buy-browse_api-item_summary-search:~:text=of%20items%20returned.-,Note,-%3A%20The%20value
+    @model_validator(mode="after")
+    def check_params(self) -> "SearchEndpointPayload":
+
+        if self.filter:
+            raise NotImplementedError("Filter is not implemented properly.")
+
+        if self.q and (self.epid or self.gtin):
+            raise ValueError("When q is specified, epid and gtin cannot be used.")
+
+        if self.aspect_filter and (
+            not self.category_ids
+            or self.category_ids != self.aspect_filter.get("category_id")
+        ):
+            raise ValueError(
+                "If aspect filter specififed, category ID must be specified in both aspect filter and base payload class."
+            )
+
+        return self
+
+    def to_payload(self) -> dict:
+        return _api_format_params(self, return_dict=True)
+
+
+if __name__ == "__main__":
+    some_int_rg = IntRange(lower_bd=1, upper_bd=5)
+    assert isinstance(some_int_rg, SearchEndpointParam)

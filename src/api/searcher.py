@@ -14,7 +14,7 @@ from config.api import SEARCH_ENDPOINT
 from utils.io import generate_log_path, write_to_dir
 
 from .auth import get_access_token
-from .core import SearchEndpointResponse
+from .core import SearchEndpointResponse, SearchEndpointPayload
 
 
 def log_response(api_response: SearchEndpointResponse, active_dir: Path) -> None:
@@ -22,7 +22,7 @@ def log_response(api_response: SearchEndpointResponse, active_dir: Path) -> None
 
     item_dir = generate_log_path(
         active_dir,
-        api_response.q,
+        " ".join(api_response.q.q),
         is_active=True,
         cat_id=api_response.inferred_cat_id,
         cat_name=api_response.inferred_cat_name,
@@ -32,8 +32,9 @@ def log_response(api_response: SearchEndpointResponse, active_dir: Path) -> None
 
 
 class ListingSearcher:
-    def __init__(self, alerter: Alerter) -> None:
-        self.alerter = alerter
+    def __init__(self, alerter: Alerter | None = None) -> None:
+        if alerter:
+            raise NotImplementedError
 
     def _parse_categories(
         self, item_summaries: list[dict]
@@ -60,7 +61,7 @@ class ListingSearcher:
         return cat_counts, cat_mapping
 
     def get_listings(
-        self, access_token: str, config: SearchAPIConfig
+        self, access_token: str, payload: SearchEndpointPayload
     ) -> SearchEndpointResponse:
         """Query API (optionally restricting category) and return the JSON response."""
 
@@ -72,20 +73,21 @@ class ListingSearcher:
         }
 
         r = requests.get(
-            url=SEARCH_ENDPOINT, params=config.to_dict(), headers=headers, timeout=10
-        )
-        r = requests.get(
-            url=SEARCH_ENDPOINT, params=config.to_dict(), headers=headers, timeout=10
+            url=SEARCH_ENDPOINT,
+            params=payload.to_payload(),
+            headers=headers,
+            timeout=10,
         )
         r_json = r.json()
 
         try:
             item_summaries: list[dict] = r.json()["itemSummaries"]
-            item_summaries: list[dict] = r.json()["itemSummaries"]
-        except KeyError:
-            print(f"KeyError; r_json: {r_json}")
-            print(f"KeyError; r_json: {r_json}")
-            exit()
+        except KeyError as e:
+            e.add_note(f"ItemSummaries not found in r_json: {r_json}")
+            raise
+
+        if "warnings" in r.json():
+            print("API returned some warnings, see output.")
 
         cat_counts, cat_mappings = self._parse_categories(item_summaries)
 
@@ -96,17 +98,14 @@ class ListingSearcher:
         # DEBUG
         for cat_id_str, cat_count in cat_counts.most_common():
             print(f"{(cat_id_str)}/{cat_mappings[int(cat_id_str)]}: {cat_count}")
-            print(f"{(cat_id_str)}/{cat_mappings[int(cat_id_str)]}: {cat_count}")
 
-        return SearchEndpointResponse(r_json, config.q, cat_id, cat_name)
+        return SearchEndpointResponse(r_json, payload.q, cat_id, cat_name)
 
 
 # Example usage
 if __name__ == "__main__":
     raise NotImplementedError
 
-    from config.dirs import ACTIVE_DIR, TEMP_ACTIVE_DIR
-if __name__ == "__main__":
     from alerts.discord import DiscordBot
     from config.alerts import DISCORD_WEBHOOK_URL
     from config.api import APP_ID, CERT_ID, REFRESH_TOKEN

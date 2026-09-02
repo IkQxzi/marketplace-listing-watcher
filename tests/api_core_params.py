@@ -1,27 +1,9 @@
-import pytest
-from api.core import IntRange, SearchEndpointFilter
-
-
-from datetime import datetime
-from unittest.mock import MagicMock, patch
-
-import pytest
-from pydantic import BaseModel, ValidationError
-
-# Importing the filter class and its supporting types from your module
-from api.core import (
-    _api_format_params,
-    ConditionName,
-    DatetimeRange,
-    IntRange,
-    SearchEndpointFilter,
-)
+from api.core import SearchEndpointQuery, SearchEndpointFilter, IntRange, DatetimeRange
 
 from datetime import datetime
 
 
-# Full valid argument dictionary satisfying all field types and validators
-valid_filter_args = {
+EXAMPLE_FILTER_PARAMS = {
     # Query Settings
     "search_in_description": True,
     # Price & Currency
@@ -49,25 +31,9 @@ valid_filter_args = {
     "delivery_country": "GB",
 }
 
-
-def test_filter_instantiation():
-    filter_instance = SearchEndpointFilter(**valid_filter_args)
-
-
-def _test_filter_parametrisation():
-    filter_instance = SearchEndpointFilter(**valid_filter_args)
-
-    print(filter_instance.to_param())
-
-
-def test_int_range():
-
-    IntRange(lower_bd=1, upper_bd=5)
-    IntRange(lower_bd=1)
-    IntRange(lower_bd=1)
-    with pytest.raises(ValueError):
-        IntRange(lower_bd=5, upper_bd=1)
-
-
-if __name__ == "__main__":
-    _test_filter_parametrisation()
+EXAMPLE_PAYLOAD_PARAMS = {
+    "q": SearchEndpointQuery(q=["iphone 17"], join_method="AND"),
+    "auto_correct": "KEYWORD",
+    "limit": 50,
+    "filter": SearchEndpointFilter(**EXAMPLE_FILTER_PARAMS),
+}
