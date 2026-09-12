@@ -10,7 +10,6 @@ from pydantic import BaseModel, ValidationError
 
 # Importing the filter class and its supporting types from your module
 from api.core import (
-    _api_format_params,
     ConditionName,
     DatetimeRange,
     IntRange,
@@ -40,18 +39,17 @@ def test_int_range():
 # Manual tests
 
 
-def test_filter_parametrisation():
+def test_filter_serialisation():
     filter_instance = SearchEndpointFilter(**EXAMPLE_FILTER_PARAMS)
-
-    print(f"\nFilter: {filter_instance.to_param()}\n")
+    print(f"\nPayload: {filter_instance.model_dump()}\n")
 
 
 def test_payload_serialisation():
 
     payload = SearchEndpointPayload(**EXAMPLE_PAYLOAD_PARAMS)
-    print(f"\nPayload: {payload.to_payload()}\n")
+    print(f"\nPayload: {payload.model_dump(exclude_none=True)}\n")
 
 
 if __name__ == "__main__":
-    test_filter_parametrisation()
+    test_filter_serialisation()
     test_payload_serialisation()

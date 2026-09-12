@@ -79,7 +79,7 @@ class ListingSearcher:
 
         r = requests.get(
             url=SEARCH_ENDPOINT,
-            params=payload.to_payload(),
+            params=payload.model_dump(exclude_none=True),
             headers=headers,
             timeout=10,
         )
@@ -89,7 +89,7 @@ class ListingSearcher:
             "warnings" in r_json and not ignore_warnings
         ):
             log_file_path = Path(f"temp_logs/{get_timestamp()}.txt")
-            self._dump_response(r_json, payload.q.to_param(), log_file_path)
+            self._dump_response(r_json, payload.q.model_dump(), log_file_path)
             raise RuntimeError(
                 f"Unexpected Search Endpoint response, see {log_file_path!s} for more details."
             )
