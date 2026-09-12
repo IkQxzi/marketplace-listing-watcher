@@ -8,10 +8,12 @@ from collections import Counter, defaultdict
 from pathlib import Path
 
 import requests
+import json
 
 from alerts.core import Alerter
 from config.api import SEARCH_ENDPOINT
 from utils.io import generate_log_path, write_to_dir
+from utils.misc import get_timestamp
 
 from .auth import get_access_token
 from .core import SearchEndpointResponse, SearchEndpointPayload
@@ -61,7 +63,10 @@ class ListingSearcher:
         return cat_counts, cat_mapping
 
     def get_listings(
-        self, access_token: str, payload: SearchEndpointPayload
+        self,
+        access_token: str,
+        payload: SearchEndpointPayload,
+        ignore_warnings: bool = False,
     ) -> SearchEndpointResponse:
         """Query API (optionally restricting category) and return the JSON response."""
 
@@ -74,20 +79,22 @@ class ListingSearcher:
 
         r = requests.get(
             url=SEARCH_ENDPOINT,
-            params=payload.to_payload(),
+            params=payload.model_dump(exclude_none=True),
             headers=headers,
             timeout=10,
         )
         r_json = r.json()
 
-        try:
-            item_summaries: list[dict] = r.json()["itemSummaries"]
-        except KeyError as e:
-            e.add_note(f"ItemSummaries not found in r_json: {r_json}")
-            raise
+        if "itemSummaries" not in r_json or (
+            "warnings" in r_json and not ignore_warnings
+        ):
+            log_file_path = Path(f"temp_logs/{get_timestamp()}.txt")
+            self._dump_response(r_json, payload.q.model_dump(), log_file_path)
+            raise RuntimeError(
+                f"Unexpected Search Endpoint response, see {log_file_path!s} for more details."
+            )
 
-        if "warnings" in r.json():
-            print("API returned some warnings, see output.")
+        item_summaries = r_json["itemSummaries"]
 
         cat_counts, cat_mappings = self._parse_categories(item_summaries)
 
@@ -96,10 +103,18 @@ class ListingSearcher:
         cat_name = cat_mappings[cat_id]
 
         # DEBUG
-        for cat_id_str, cat_count in cat_counts.most_common():
-            print(f"{(cat_id_str)}/{cat_mappings[int(cat_id_str)]}: {cat_count}")
+        # for cat_id_str, cat_count in cat_counts.most_common():
+        #     print(f"{(cat_id_str)}/{cat_mappings[int(cat_id_str)]}: {cat_count}")
 
         return SearchEndpointResponse(r_json, payload.q, cat_id, cat_name)
+
+    def _dump_response(
+        self, json_response: str, query: str, log_file_path: Path
+    ) -> None:
+        """Dump response to file. Useful for debugging."""
+
+        with log_file_path.open(mode="w") as f:
+            f.write(f"json: {json.dumps(json_response, indent=4)}\nquery: {query}")
 
 
 # Example usage
