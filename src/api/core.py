@@ -1,8 +1,8 @@
 """Functionality and base classes for any part of API."""
 
 from dataclasses import dataclass
-from datetime import datetime
-from typing import Annotated, Any, Literal
+from datetime import datetime, timedelta
+from typing import Annotated, Any, Literal, Self
 from collections.abc import Mapping
 from abc import ABC, abstractmethod
 
@@ -10,6 +10,7 @@ from pydantic import (
     BaseModel,
     Field,
     model_validator,
+    model_serializer,
     field_validator,
     ConfigDict,
     AliasGenerator,
@@ -135,87 +136,71 @@ class SearchEndpointParam(ABC, BaseModel):
         _api_format_params(self)
 
 
-class RangeParam[T: (int, str)](SearchEndpointParam):
-    """Class for some arbitrary (int or datetime) param in Search Endpoint which requires a range.
-    At least one of: lower_bd, upper_bd required (or both)."""
+def _range_to_str(lower_bd: str | int | None, upper_bd: str | int | None) -> str:
+    """Convert a range to a str with optional vals."""
 
+    l = lower_bd if lower_bd is not None else ""
+    u = upper_bd if lower_bd is not None else ""
+
+    return f"{l}..{u}"
+
+
+# TODO: handle non-BST
+def format_datetime(v: datetime | None) -> str | None:
+    """
+    Format datetime objects to format API expects.
+    Assumes that datetime is specified in UK BST, converts to UTC.
+    """
+
+    if v:
+        v = v - timedelta(hours=1)  # Convert to UTC
+        return f"{v.isoformat()}Z"
+
+    return v
+
+
+class RangeParam[T: (int, datetime)](BaseModel):
     lower_bd: T | None = None
     upper_bd: T | None = None
 
     @model_validator(mode="after")
-    def ensure_bounds(self) -> "RangeParam":
+    def validate_bounds(self) -> Self:
+        if self.lower_bd is None and self.upper_bd is None:
+            raise ValueError("At least one bound must be specified.")
 
-        if not (self.lower_bd or self.upper_bd):
-            raise ValueError("At least one of min, max required.")
+        if (
+            self.lower_bd is not None
+            and self.upper_bd is not None
+            and self.lower_bd >= self.upper_bd
+        ):
+            raise ValueError("Lower bound must be less than upper bound.")
 
         return self
-
-    def to_param(self) -> str:
-        "Returns format: [lower_bd..upper_bd]"
-
-        param_str = ".."
-
-        if self.lower_bd:
-            param_str = f"{self.lower_bd}{param_str}"
-
-        if self.upper_bd:
-            param_str = f"{param_str}{self.upper_bd}"
-
-        return f"[{param_str}]"
 
 
 class IntRange(RangeParam[int]):
-    """Generic class for some range of ints."""
-
-    lower_bd: Annotated[int, Field(ge=0)] | None = None
-    upper_bd: Annotated[int, Field(ge=0)] | None = None
-
-    @model_validator(mode="after")
-    def validate_bounds(self) -> "IntRange":
-        if self.lower_bd and self.upper_bd and not (self.lower_bd < self.upper_bd):
-            raise ValueError(
-                f"lower_b must be less than upper_bd.\n min:{self.lower_bd} !< max:{self.upper_bd}."
-            )
-
-        return self
-
-
-class DatetimeRange(RangeParam[str]):
-    """Generic class for some range of datetimes. Requires that bounds be ISO-formatted strs."""
-
-    lower_bd: str | None = None
-    upper_bd: str | None = None
-
     @field_validator("lower_bd", "upper_bd")
     @classmethod
-    def validate_datetime(cls, v: str | None) -> str | None:
+    def check_gt_zero(cls, v: int) -> int | None:
+        if v is not None and v <= 0:
+            raise ValueError("Bounds must be greater than 0.")
 
-        if v and v[-1] != "Z":
-            raise ValueError(f"Ensure datetimes are UTC format. {v}")
         return v
 
-    @model_validator(mode="after")
-    def conv_datetimes(self) -> "DatetimeRange":
-        """Convert datetimes to ISO format API expects."""
+    @model_serializer
+    def serialize(self) -> str:
+        return _range_to_str(self.lower_bd, self.upper_bd)
 
-        if self.lower_bd:
-            try:
-                lower_bd_dt = datetime.fromisoformat(self.lower_bd)
-            except:
-                raise ValueError("lower_bd must be ISO 8601 format.")
 
-        if self.upper_bd:
-            try:
-                upper_bd_dt = datetime.fromisoformat(self.upper_bd)
-            except:
-                raise ValueError("upper_bd must be ISO 8601 format.")
+class DatetimeRange(RangeParam[datetime]):
+    # Maybe check that the date is not before today,
+    # if API does not support that.
 
-        if self.lower_bd and self.upper_bd and not (lower_bd_dt < upper_bd_dt):
-            raise ValueError(
-                f"lower_b must be less than upper_bd.\n min:{self.lower_bd} !< max:{self.upper_bd}."
-            )
-
-        return self
+    @model_serializer
+    def serialize(self) -> str:
+        return _range_to_str(
+            format_datetime(self.lower_bd), format_datetime(self.upper_bd)
+        )
 
 
 type ConditionName = Literal[
