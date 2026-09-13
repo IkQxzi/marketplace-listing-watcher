@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Annotated, Any, Literal, Self
+from typing import Annotated, Any, Literal, Self, TYPE_CHECKING
 from collections.abc import Mapping
 from abc import ABC, abstractmethod
 
@@ -98,6 +98,16 @@ LowercaseBool = Annotated[Literal[True], PlainSerializer(lambda v: str(v).lower(
 # ---------------------------- Base Classes ----------------------------
 
 
+class SearchPayloadParam(BaseModel, ABC):
+    @abstractmethod
+    def serialize(self) -> str: ...
+
+    if TYPE_CHECKING:
+
+        def model_dump(self, *args: Any, **kwargs: Any) -> str:  # type: ignore[override]
+            return ""
+
+
 class RangeParam[T: (int, datetime)](BaseModel):
     lower_bd: T | None = None
     upper_bd: T | None = None
@@ -130,7 +140,7 @@ class RangeParam[T: (int, datetime)](BaseModel):
 # ---------------------------- Param Classes ----------------------------
 
 
-class IntRange(RangeParam[int]):
+class IntRange(RangeParam[int], SearchPayloadParam):
     @field_validator("lower_bd", "upper_bd")
     @classmethod
     def check_gt_zero(cls, v: int) -> int | None:
@@ -144,7 +154,7 @@ class IntRange(RangeParam[int]):
         return super()._range_to_str(self.lower_bd, self.upper_bd)
 
 
-class DatetimeRange(RangeParam[datetime]):
+class DatetimeRange(RangeParam[datetime], SearchPayloadParam):
     # Maybe check that the date is not before today,
     # if API does not support that.
 
@@ -168,7 +178,7 @@ class DatetimeRange(RangeParam[datetime]):
         )
 
 
-class SearchEndpointFilter(BaseModel):
+class SearchEndpointFilter(SearchPayloadParam):
     """
     Filters which are used by SearchEndpointPayload.\n
     Some conditions unique to the 'apparel' category have been omitted.
@@ -276,7 +286,7 @@ class SearchEndpointFilter(BaseModel):
         return _comma_colon_join_dict(data)
 
 
-class SearchEndpointQuery(BaseModel):
+class SearchEndpointQuery(SearchPayloadParam):
     kwords: list[str]
     excl_kwords: list[str] | None = None
     join_method: Literal["AND", "OR"]

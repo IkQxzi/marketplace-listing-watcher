@@ -32,7 +32,7 @@ def test_int_range():
 
     IntRange(lower_bd=1, upper_bd=5)
     IntRange(lower_bd=1)
-    IntRange(lower_bd=1)
+    IntRange(upper_bd=1)
     with pytest.raises(ValueError):
         IntRange(lower_bd=5, upper_bd=1)
 

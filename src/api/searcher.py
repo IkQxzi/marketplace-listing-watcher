@@ -89,7 +89,7 @@ class ListingSearcher:
             ("warnings" in r_json or "errors" in r_json) and not ignore_warnings
         ):
             log_file_path = Path(f"temp_logs/{get_timestamp()}.txt")
-            self._dump_response(r_json, payload.model_dump(), log_file_path)
+            self._dump_response(r_json, payload.search_value, log_file_path)
             raise RuntimeError(
                 f"Unexpected Search Endpoint response, see {log_file_path!s} for more details."
             )
@@ -114,12 +114,14 @@ class ListingSearcher:
         )
 
     def _dump_response(
-        self, json_response: str, query: str, log_file_path: Path
+        self, json_response: str, search_value: str, log_file_path: Path
     ) -> None:
         """Dump response to file. Useful for debugging."""
 
         with log_file_path.open(mode="w") as f:
-            f.write(f"json: {json.dumps(json_response, indent=4)}\nquery: {query}")
+            f.write(
+                f"json: {json.dumps(json_response, indent=4)}\nsearch_value: {search_value}"
+            )
 
 
 # Example usage
