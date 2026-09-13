@@ -29,7 +29,7 @@ from utils.misc import snake_to_camel_case
 @dataclass
 class SearchEndpointResponse:
     json_response: Any
-    q: SearchEndpointQuery
+    search_value: str
     inferred_cat_id: int
     inferred_cat_name: str
 
@@ -277,38 +277,51 @@ class SearchEndpointFilter(BaseModel):
 
 
 class SearchEndpointQuery(BaseModel):
-    q: list[str]
+    kwords: list[str]
+    excl_kwords: list[str] | None = None
     join_method: Literal["AND", "OR"]
 
-    @field_validator("q")
-    @classmethod
-    def validate_query(cls, v: list[str]) -> list[str]:
-        if len(" ".join(v)) > 100:
+    @model_validator(mode="after")
+    def validate_query(self) -> Self:
+        # +2 for the first ' -' in between them
+        if (
+            len(" ".join(self.kwords))
+            + (len(" -".join(self.excl_kwords)) + 2 if self.excl_kwords else 0)
+            > 100
+        ):
             raise ValueError("Combined length of query + spaces must be <=100.")
 
-        return v
+        return self
 
     @model_serializer
     def serialize(self) -> str:
+
+        query = ""
+
         if self.join_method == "AND":
-            return " ".join(self.q)
+            query = " ".join(self.kwords)
 
         if self.join_method == "OR":
-            return (
-                "(" + ", ".join(self.q) + ")"
-            )  # Has a space as well as comma in docs for some reason
+            # Has a space as well as comma in docs for some reason
+            query = "(" + ", ".join(self.kwords) + ")"
 
-        raise ValueError()
+        if self.excl_kwords:
+            query += f" -{' -'.join(self.excl_kwords)}"
+
+        return query
 
 
 # May not need serialization logic due to way params are handled by requests.get() automatically
 class SearchEndpointPayload(BaseModel):
     """
     All params for the Search Endpoint of the Browse API.
+    When epid or gtin are used, q must be empty.
+    epid and gtin can be used together.
+    If aspect filter specififed, category ID must be specified in both aspect filter and payload.
     """
 
     # epid and q are exclusive
-    q: SearchEndpointQuery
+    q: SearchEndpointQuery | None = None
 
     # Match any aspects of the items that are specific to that item
     # TODO: eg ...
@@ -345,6 +358,21 @@ class SearchEndpointPayload(BaseModel):
     ] = "MATCHING_ITEMS"  # Maybe set to None
     filter: SearchEndpointFilter | None = None
 
+    @computed_field
+    @property
+    def search_value(self) -> str:
+        v = ""
+        if self.q:
+            v += self.q.model_dump()
+
+        if self.epid:
+            v += str(self.epid)
+
+        if self.gtin:
+            v += str(self.gtin)
+
+        return v
+
     @field_validator("category_ids")
     @classmethod
     def ensure_one_category(cls, v: list[int] | None) -> list[int] | None:
@@ -356,6 +384,10 @@ class SearchEndpointPayload(BaseModel):
     @model_validator(mode="after")
     def check_params(self) -> Self:
 
+        if not (self.q or self.epid or self.gtin):
+            raise ValueError("One of: q, epid, gtin must be specified.")
+
+        # But epid, gtin can be used together
         if self.q and (self.epid or self.gtin):
             raise ValueError("When q is specified, epid and gtin cannot be used.")
 

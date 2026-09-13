@@ -2,6 +2,12 @@ from api.core import SearchEndpointQuery, SearchEndpointFilter, IntRange, Dateti
 
 from datetime import datetime
 
+EXAMPLE_QUERY_PARAMS = {
+    "kwords": ["laptop", "thinkpad"],
+    "excl_kwords": ["case", "accessory"],
+    "join_method": "AND",
+}
+
 
 EXAMPLE_FILTER_PARAMS = {
     "search_in_description": True,
@@ -20,9 +26,10 @@ EXAMPLE_FILTER_PARAMS = {
     "delivery_country": "GB",
 }
 
-EXAMPLE_PAYLOAD_PARAMS = {
+COMPLEX_EXAMPLE_PAYLOAD_PARAMS = {
     "q": {
-        "q": ["laptop", "thinkpad"],
+        "kwords": ["laptop", "thinkpad"],
+        "excl_kwords": ["case", "accessory"],
         "join_method": "AND",
     },
     "category_ids": [177],
@@ -43,6 +50,48 @@ EXAMPLE_PAYLOAD_PARAMS = {
         },
         "buying_options": ["FIXED_PRICE", "AUCTION"],
         "seller_account_types": ["BUSINESS"],
+        "delivery_country": "GB",
+    },
+}
+
+
+SIMPLE_EXAMPLE_PAYLOAD_PARAMS = {
+    "q": {
+        "kwords": ["laptop", "thinkpad"],
+        "join_method": "AND",
+    },
+    "limit": 50,
+    "offset": 0,
+    "fieldgroups": "MATCHING_ITEMS",
+    "filter": {
+        "search_in_description": True,
+        "price": {
+            "lower_bd": 150,
+            "upper_bd": 600,
+        },
+        "price_currency": "GBP",
+        "conditions": ["NEW", "USED"],
+        "delivery_country": "GB",
+    },
+}
+
+EXAMPLE_EXCL_KWORDS_PAYLOAD_PARAMS = {
+    "q": {
+        "kwords": ["laptop", "thinkpad"],
+        "excl_kwords": ["case", "accessory", "t480"],
+        "join_method": "AND",
+    },
+    "limit": 50,
+    "offset": 0,
+    "fieldgroups": "MATCHING_ITEMS",
+    "filter": {
+        "search_in_description": True,
+        "price": {
+            "lower_bd": 150,
+            "upper_bd": 600,
+        },
+        "price_currency": "GBP",
+        "conditions": ["NEW", "USED"],
         "delivery_country": "GB",
     },
 }

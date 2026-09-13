@@ -6,19 +6,20 @@ from datetime import datetime
 from unittest.mock import MagicMock, patch
 
 import pytest
-from pydantic import BaseModel, ValidationError
 
 # Importing the filter class and its supporting types from your module
 from api.core import (
-    ConditionName,
-    DatetimeRange,
     IntRange,
     SearchEndpointFilter,
     SearchEndpointQuery,
     SearchEndpointPayload,
 )
 
-from tests.api_core_params import EXAMPLE_FILTER_PARAMS, EXAMPLE_PAYLOAD_PARAMS
+from tests.api_core_params import (
+    EXAMPLE_FILTER_PARAMS,
+    SIMPLE_EXAMPLE_PAYLOAD_PARAMS,
+    EXAMPLE_QUERY_PARAMS,
+)
 
 from datetime import datetime
 
@@ -36,17 +37,19 @@ def test_int_range():
         IntRange(lower_bd=5, upper_bd=1)
 
 
-# Manual tests
+def test_query_serialisation():
+    query = SearchEndpointQuery(**EXAMPLE_QUERY_PARAMS)
+    print(f"\nQuery: '{query.model_dump()}'\n")
 
 
 def test_filter_serialisation():
     filter_instance = SearchEndpointFilter(**EXAMPLE_FILTER_PARAMS)
-    print(f"\nPayload: {filter_instance.model_dump()}\n")
+    print(f"\nFilter: {filter_instance.model_dump()}\n")
 
 
 def test_payload_serialisation():
 
-    payload = SearchEndpointPayload(**EXAMPLE_PAYLOAD_PARAMS)
+    payload = SearchEndpointPayload(**SIMPLE_EXAMPLE_PAYLOAD_PARAMS)
     print(f"\nPayload: {payload.model_dump(exclude_none=True)}\n")
 
 

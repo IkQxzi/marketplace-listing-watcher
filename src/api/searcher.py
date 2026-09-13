@@ -20,11 +20,11 @@ from .core import SearchEndpointResponse, SearchEndpointPayload
 
 
 def log_response(api_response: SearchEndpointResponse, active_dir: Path) -> None:
-    """Log API response to two files: one for item summaries, one for metadata, using category counts as file names."""
+    """Log API response to file."""
 
     item_dir = generate_log_path(
         active_dir,
-        " ".join(api_response.q.q),
+        api_response.search_value,
         is_active=True,
         cat_id=api_response.inferred_cat_id,
         cat_name=api_response.inferred_cat_name,
@@ -86,10 +86,10 @@ class ListingSearcher:
         r_json = r.json()
 
         if "itemSummaries" not in r_json or (
-            "warnings" in r_json and not ignore_warnings
+            ("warnings" in r_json or "errors" in r_json) and not ignore_warnings
         ):
             log_file_path = Path(f"temp_logs/{get_timestamp()}.txt")
-            self._dump_response(r_json, payload.q.model_dump(), log_file_path)
+            self._dump_response(r_json, payload.model_dump(), log_file_path)
             raise RuntimeError(
                 f"Unexpected Search Endpoint response, see {log_file_path!s} for more details."
             )
@@ -106,7 +106,12 @@ class ListingSearcher:
         # for cat_id_str, cat_count in cat_counts.most_common():
         #     print(f"{(cat_id_str)}/{cat_mappings[int(cat_id_str)]}: {cat_count}")
 
-        return SearchEndpointResponse(r_json, payload.q, cat_id, cat_name)
+        return SearchEndpointResponse(
+            json_response=r_json,
+            search_value=payload.search_value,
+            inferred_cat_id=cat_id,
+            inferred_cat_name=cat_name,
+        )
 
     def _dump_response(
         self, json_response: str, query: str, log_file_path: Path
