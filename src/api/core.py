@@ -2,10 +2,11 @@
 
 import urllib.parse
 
+import json
 import hashlib
+from typing import Annotated, Any, Literal, Self, TYPE_CHECKING
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Annotated, Any, Literal, Self, TYPE_CHECKING
 from collections.abc import Mapping
 from abc import ABC, abstractmethod
 
@@ -89,7 +90,7 @@ def _comma_colon_join_dict(d: dict[str, Any]):
 
 PipeSepStrList = Annotated[
     list[str],
-    PlainSerializer(lambda v: "{" + "|".join(sorted(v)) + "}", return_type=str),
+    PlainSerializer(_pipe_join_curly_wrap_sorted, return_type=str),
 ]
 
 CommaSepNumList = Annotated[
@@ -99,6 +100,10 @@ CommaSepNumList = Annotated[
 # API expects 'true', not 'True'
 LowercaseBool = Annotated[Literal[True], PlainSerializer(lambda v: str(v).lower())]
 
+LowercaseList = Annotated[
+    list[str],
+    PlainSerializer(lambda v: sorted([s.lower() for s in v]), return_type=list),
+]
 
 # ---------------------------- Base Classes ----------------------------
 
@@ -235,7 +240,7 @@ class SearchEndpointFilter(SearchPayloadParam):
 
     # ---------- SELLER ----------
     sellers: (
-        Annotated[list[str], PlainSerializer(_pipe_join_curly_wrap_sorted)] | None
+        Annotated[LowercaseList, PlainSerializer(_pipe_join_curly_wrap_sorted)] | None
     ) = None
     seller_account_types: (
         Annotated[
@@ -298,8 +303,8 @@ class SearchEndpointFilter(SearchPayloadParam):
 
 
 class SearchEndpointQuery(SearchPayloadParam):
-    kwords: list[str]
-    excl_kwords: list[str] | None = None
+    kwords: LowercaseList
+    excl_kwords: LowercaseList | None = None
     join_method: Literal["AND", "OR"]
 
     @model_validator(mode="after")
@@ -314,20 +319,21 @@ class SearchEndpointQuery(SearchPayloadParam):
 
         return self
 
-    @model_serializer
-    def serialize(self) -> str:
+    @model_serializer(mode="wrap")
+    def serialize(self, handler: SerializerFunctionWrapHandler) -> str:
+        data: dict[str, Any] = handler(self)
 
         query = ""
 
         if self.join_method == "AND":
-            query = " ".join(sorted(self.kwords))
+            query = " ".join(data["kwords"])
 
         if self.join_method == "OR":
             # Has a space as well as comma in docs for some reason
-            query = "(" + ", ".join(sorted(self.kwords)) + ")"
+            query = "(" + ", ".join(data["kwords"]) + ")"
 
         if self.excl_kwords:
-            query += f" -{' -'.join(sorted(self.excl_kwords))}"
+            query += f" -{' -'.join(data['excl_kwords'])}"
 
         return query
 
@@ -405,21 +411,13 @@ class SearchEndpointPayload(BaseModel):
             raise ValueError("API expects max. one category.")
 
     def __hash__(self) -> int:
-        """Generate a hash for the instance."""
-
-        self._hashable_model_dump = {}
-
-        # Ensuring different orders of lists produce the same hash
-        for k, v in self.model_dump().items():
-            if isinstance(v, list):
-                self._hashable_model_dump[k] = sorted(v)
-
-            else:
-                self._hashable_model_dump[k] = v
+        """
+        Generate a hash for the instance.
+        Does not sort lists, assumes that any BaseModel params have handled sorting themselves.
+        """
 
         url = urllib.parse.urlencode(self.model_dump())
-
-        return int(hashlib.md5(bytes(url, encoding="utf-8")).hexdigest(), 16)
+        return int.from_bytes(hashlib.md5(url.encode()).digest())
 
     # Maybe offset, limit will have an issue
     # See: https://developer.ebay.com/develop/api/buy/browse_api#buy-browse_api-item_summary-search:~:text=of%20items%20returned.-,Note,-%3A%20The%20value

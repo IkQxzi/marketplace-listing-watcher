@@ -1,4 +1,5 @@
 import json
+import random
 import pytest
 
 # Importing the filter class and its supporting types from your module
@@ -47,32 +48,54 @@ def test_payload_serialisation():
 
 
 def test_payload_hashing():
+
+    def _randomise_case(l: list[str]) -> list[str]:
+        return [
+            "".join([c.upper() if random.choice((0, 1)) else c for c in s]) for s in l
+        ]
+
     payload = SearchEndpointPayload(**COMPLEX_EXAMPLE_PAYLOAD_PARAMS)
     base_hash = hash(payload)
 
     payload_copy = SearchEndpointPayload(**COMPLEX_EXAMPLE_PAYLOAD_PARAMS.copy())
     assert hash(payload_copy) == base_hash, "Copied params do not result in same hash."
 
-    mixed_payload_params = COMPLEX_EXAMPLE_PAYLOAD_PARAMS.copy()
-    mixed_payload_params["q"]["kwords"] = reversed(
+    reversed_payload_params = COMPLEX_EXAMPLE_PAYLOAD_PARAMS.copy()
+    reversed_payload_params["q"]["kwords"] = COMPLEX_EXAMPLE_PAYLOAD_PARAMS["q"][
+        "kwords"
+    ][::-1]
+    reversed_payload_params["q"]["excl_kwords"] = COMPLEX_EXAMPLE_PAYLOAD_PARAMS["q"][
+        "excl_kwords"
+    ][::-1]
+    reversed_payload_params["filter"]["conditions"] = COMPLEX_EXAMPLE_PAYLOAD_PARAMS[
+        "filter"
+    ]["conditions"][::-1]
+    reversed_payload_params["filter"]["buying_options"] = (
+        COMPLEX_EXAMPLE_PAYLOAD_PARAMS["filter"]["buying_options"][::-1]
+    )
+
+    reversed_payload = SearchEndpointPayload(**reversed_payload_params)
+
+    assert hash(reversed_payload) == base_hash, (
+        "Different ordered lists do not result in same hash."
+        f"\nBase payload model_dump(): \n{json.dumps(payload.model_dump(), indent=2)}\n"
+        f"\nMixed payload model_dump(): \n{json.dumps(reversed_payload.model_dump(), indent=2)}"
+    )
+
+    random_cased_payload_params = COMPLEX_EXAMPLE_PAYLOAD_PARAMS.copy()
+    random_cased_payload_params["q"]["kwords"] = _randomise_case(
         COMPLEX_EXAMPLE_PAYLOAD_PARAMS["q"]["kwords"]
     )
-    mixed_payload_params["q"]["excl_kwords"] = reversed(
+    random_cased_payload_params["q"]["excl_kwords"] = _randomise_case(
         COMPLEX_EXAMPLE_PAYLOAD_PARAMS["q"]["excl_kwords"]
     )
-    mixed_payload_params["filter"]["conditions"] = reversed(
-        COMPLEX_EXAMPLE_PAYLOAD_PARAMS["filter"]["conditions"]
-    )
-    mixed_payload_params["filter"]["buying_options"] = reversed(
-        COMPLEX_EXAMPLE_PAYLOAD_PARAMS["filter"]["buying_options"]
-    )
 
-    mixed_payload = SearchEndpointPayload(**mixed_payload_params)
+    random_cased_payload = SearchEndpointPayload(**random_cased_payload_params)
 
-    assert hash(mixed_payload) == hash(payload), (
-        "Different ordered lists do not result in same hash."
-        f"\nBase payload _hashable_model_dump: \n{json.dumps(payload._hashable_model_dump, indent=2)}\n"
-        f"\nMixed payload _hashable_model_dump: \n{json.dumps(mixed_payload._hashable_model_dump, indent=2)}"
+    assert hash(random_cased_payload) == base_hash, (
+        "Different-cased lists do not result in same hash."
+        f"\nBase payload model_dump(): \n{json.dumps(payload.model_dump(), indent=2)}\n"
+        f"\nRandom-cased payload model_dump(): \n{json.dumps(random_cased_payload.model_dump(), indent=2)}"
     )
 
 
