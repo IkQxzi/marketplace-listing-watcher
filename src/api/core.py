@@ -196,7 +196,6 @@ class SearchEndpointFilter(SearchPayloadParam):
     Some conditions unique to the 'apparel' category have been omitted.
     """
 
-    # TODO: check that I can still instantiate by name and not by alias
     model_config = ConfigDict(
         alias_generator=AliasGenerator(serialization_alias=to_camel),
         serialize_by_alias=True,
@@ -224,7 +223,6 @@ class SearchEndpointFilter(SearchPayloadParam):
     )
 
     # ---------- BUYING FORMAT ----------
-    # See docstring for formatting rules
     bid_count: IntRange | None = None
     buying_options: (
         Annotated[

@@ -1,12 +1,12 @@
 """Parsing sold listings."""
 
+from pathlib import Path
+
 import pandas as pd
 from bs4 import BeautifulSoup, Tag
 
-from pathlib import Path
-
 from config.dirs import LOG_DIR
-from utils.io import generate_log_path, write_to_dir, write_df_to_dir
+from utils.io import generate_save_path, write_df_to_dir
 
 
 class ListingParser:
@@ -26,7 +26,7 @@ class ListingParser:
         # Try to infer item name from directory structure
         if not item_name:
             assert isinstance(html, Path), (
-                f"Parameter html must be a Path object where item name is unspecified."
+                "Parameter html must be a Path object where item name is unspecified."
             )
 
             item_name = str(html.parent.name)
@@ -126,7 +126,7 @@ class ListingParser:
         parsed_items_df = pd.DataFrame(parsed_items)
 
         if self.save_df:
-            dir = generate_log_path(self.log_dir, item_name, is_active=False)
+            dir = generate_save_path(self.log_dir, item_name, is_active=False)
             write_df_to_dir(parsed_items_df, dir)
 
         return parsed_items_df

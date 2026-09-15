@@ -3,19 +3,51 @@ Universal I/O functions.
 Note that utf-8 encoding is required to support emojis.
 """
 
-from pandas import DataFrame, read_csv
-import pandas as pd
-
 import json
 from pathlib import Path
+from typing import Any
+
+import pandas as pd
+from pandas import DataFrame, read_csv
 
 from utils.misc import get_timestamp
 
-from typing import Any
+# ---------------------------- Generic ----------------------------
+
+
+def get_file_names_in_dir(dir: Path) -> list[str]:
+    return [item.name for item in dir.iterdir() if item.is_file()]
+
+
+def write_to_dir(content: str, dir: Path, file_ext: str) -> None:
+    """
+    Log content to a directory, with the filename being a timestamp ending in specified file extension.\n
+    Creates directory if it does not exist.
+    """
+
+    # Ensure file_ext begins with dot
+    if file_ext[0] != ".":
+        file_ext = "." + file_ext
+
+    # Create file
+    dir.mkdir(parents=True, exist_ok=True)
+    file_path = (dir / get_timestamp()).with_suffix(file_ext)
+
+    print(f"Writing to file: {file_path!s}")
+
+    if file_ext == ".json":
+        with file_path.open("w", encoding="utf-8") as f:
+            json.dump(content, f, indent=4)
+        return
+
+    with file_path.open("w", encoding="utf-8") as f:
+        f.write(content)
+
+    return
 
 
 # TODO: Rewrite this to not require is_active flag (pass in sold/active as log_dir)
-def generate_log_path(
+def generate_save_path(
     log_dir: Path,
     item_name: str,
     is_active: bool,
@@ -39,6 +71,9 @@ def generate_log_path(
     return final_path
 
 
+# ---------------------------- JSON ----------------------------
+
+
 def get_latest_search_json(directory: Path, search: str) -> Path:
     """Get the Path object of the latest json for a given search in a given directory."""
 
@@ -46,6 +81,30 @@ def get_latest_search_json(directory: Path, search: str) -> Path:
     latest_search = max(f for f in search_json_gen)
 
     return latest_search
+
+
+def read_json(path: Path) -> Any:
+    """Takes a path and returns the JSON content at that path."""
+
+    if path.exists():
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+        return data
+
+    else:
+        raise FileNotFoundError
+
+
+def write_json(data: Any, path: Path) -> None:
+    """Takes a directory and JSON content, and writes it to the directory"""
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2)
+
+
+# ---------------------------- DataFrames ----------------------------
 
 
 def read_df_from_path(data_file: Path) -> DataFrame:
@@ -57,33 +116,6 @@ def read_df_from_path(data_file: Path) -> DataFrame:
     return df
 
 
-def write_to_dir(content: str, dir: Path, file_ext: str) -> None:
-    """
-    Log content to a directory, with the filename being a timestamp ending in specified file extension.\n
-    Creates directory if it does not exist.
-    """
-
-    # Ensure file_ext begins with dot
-    if file_ext[0] != ".":
-        file_ext = "." + file_ext
-
-    # Create file
-    dir.mkdir(parents=True, exist_ok=True)
-    file_path = (dir / get_timestamp()).with_suffix(file_ext)
-
-    print(f"Writing to file: {str(file_path)}")
-
-    if file_ext == ".json":
-        with file_path.open("w", encoding="utf-8") as f:
-            json.dump(content, f, indent=4)
-        return
-
-    with file_path.open("w", encoding="utf-8") as f:
-        f.write(content)
-
-    return
-
-
 def write_df_to_dir(df: DataFrame, dir: Path, include_index: bool) -> None:
     """Write df to directory, creating dir if it does not exist."""
 
@@ -93,10 +125,6 @@ def write_df_to_dir(df: DataFrame, dir: Path, include_index: bool) -> None:
     df.to_csv(df_path, encoding="utf-8", index=include_index)
 
     print(f"Saved df to path: {df_path}")
-
-
-def get_file_names_in_dir(dir: Path) -> list[str]:
-    return [item.name for item in dir.iterdir() if item.is_file()]
 
 
 def read_multiple_df(directory: Path) -> DataFrame:
@@ -120,25 +148,3 @@ def read_latest_df(directory: Path) -> DataFrame:
     latest_file = max(files, key=lambda x: x.stat().st_mtime)
 
     return latest_file
-
-
-def read_json(path: Path) -> Any:
-    '''Takes a path and returns the JSON content at that path.'''
-
-    if path.exists():
-        with open(path, "r", encoding="utf-8") as f:
-            data = json.load(f)
-        return data
-
-    else:
-        raise FileNotFoundError
-
-
-def write_json(data:Any, path:Path) -> None:
-    """Takes a directory and JSON content, and writes it to the directory"""
-
-    path.parent.mkdir(parents=True, exist_ok=True)
-
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2)
-
