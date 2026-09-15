@@ -22,7 +22,7 @@ def test_listing_searcher():
     access_token = get_access_token(REFRESH_TOKEN, APP_ID, CERT_ID)
     response = searcher.get_listings(access_token, payload)
 
-    log_response(response, TEMP_ACTIVE_DIR)
+    log_response(payload, response, TEMP_ACTIVE_DIR)
 
 
 def test_excl_kwords():
@@ -34,8 +34,8 @@ def test_excl_kwords():
     excl_kwords_response = searcher.get_listings(access_token, excl_kwords_payload)
 
     excl_kwords = EXAMPLE_EXCL_KWORDS_PAYLOAD_PARAMS["q"].pop("excl_kwords")
-    regular_payload = SearchEndpointPayload(**EXAMPLE_EXCL_KWORDS_PAYLOAD_PARAMS)
-    reg_response = searcher.get_listings(access_token, regular_payload)
+    reg_payload = SearchEndpointPayload(**EXAMPLE_EXCL_KWORDS_PAYLOAD_PARAMS)
+    reg_response = searcher.get_listings(access_token, reg_payload)
 
     reg_listing_titles = [
         listing["title"] for listing in reg_response.json_response["itemSummaries"]
@@ -46,7 +46,7 @@ def test_excl_kwords():
     if all(
         f"{kword} " not in " ".join(reg_listing_titles).lower() for kword in excl_kwords
     ):
-        log_response(reg_response, TEMP_ACTIVE_DIR)
+        log_response(reg_payload, reg_response, TEMP_ACTIVE_DIR)
         raise ValueError(
             "excl. kwords are not found in regular search, test is ambiguous."
         )
@@ -60,11 +60,11 @@ def test_excl_kwords():
         f"{kword} " in " ".join(excl_kwords_listing_titles).lower()
         for kword in excl_kwords
     ):
-        log_response(reg_response, TEMP_ACTIVE_DIR)
+        log_response(reg_payload, reg_response, TEMP_ACTIVE_DIR)
         time.sleep(1)  # For timestamp offset
-        log_response(excl_kwords_response, TEMP_ACTIVE_DIR)
+        log_response(excl_kwords_payload, excl_kwords_response, TEMP_ACTIVE_DIR)
         raise ValueError("excl. kword found in listing titles.")
 
-    log_response(reg_response, TEMP_ACTIVE_DIR)
+    log_response(reg_payload, reg_response, TEMP_ACTIVE_DIR)
     time.sleep(1)  # For timestamp offset
-    log_response(excl_kwords_response, TEMP_ACTIVE_DIR)
+    log_response(excl_kwords_payload, excl_kwords_response, TEMP_ACTIVE_DIR)
