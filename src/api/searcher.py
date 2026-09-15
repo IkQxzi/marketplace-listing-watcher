@@ -18,7 +18,11 @@ from api import SearchEndpointPayload
 from api import SearchEndpointResponse, ResponseMetadata
 
 
-def log_response(api_response: SearchEndpointResponse, active_dir: Path) -> None:
+def log_response(
+    payload: SearchEndpointPayload,
+    api_response: SearchEndpointResponse,
+    active_dir: Path,
+) -> None:
     """Log API response to file."""
 
     item_dir = generate_save_path(
@@ -29,7 +33,11 @@ def log_response(api_response: SearchEndpointResponse, active_dir: Path) -> None
         cat_name=api_response.inferred_cat_name,
     )
 
-    write_to_dir(api_response._raw_json, item_dir, file_ext="json")
+    json_path = item_dir / f"{hash(payload)!s}.json"
+    print(f"json_path: {json_path}")
+
+    with json_path.open(mode="w") as f:
+        json.dump(api_response.json_response, f)
 
 
 class ListingSearcher:
