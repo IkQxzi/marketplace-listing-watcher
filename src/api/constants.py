@@ -2,6 +2,8 @@
 
 from typing import Literal
 
+type buyingOption = Literal["FIXED_PRICE", "AUCTION", "BEST_OFFER", "CLASSIFIED_AD"]
+
 type ConditionName = Literal[
     "NEW",
     "NEW_OTHER",
@@ -19,7 +21,11 @@ type ConditionName = Literal[
     "FOR_PARTS_OR_NOT_WORKING",
 ]
 
-CONDITION_ID_MAP: dict[ConditionName, int] = {
+type ConditionId = Literal[
+    1000, 1500, 1750, 2000, 2010, 2020, 2030, 2500, 2750, 3000, 4000, 5000, 6000, 7000
+]
+
+CONDITION_NAME_MAP: dict[ConditionName, ConditionId] = {
     "NEW": 1000,
     "NEW_OTHER": 1500,
     "NEW_WITH_DEFECTS": 1750,
@@ -34,4 +40,22 @@ CONDITION_ID_MAP: dict[ConditionName, int] = {
     "USED_GOOD": 5000,
     "USED_ACCEPTABLE": 6000,
     "FOR_PARTS_OR_NOT_WORKING": 7000,
+}
+
+# jic
+CONDITION_ID_MAP: dict[ConditionId, ConditionName] = {
+    1000: "NEW",
+    1500: "NEW_OTHER",
+    1750: "NEW_WITH_DEFECTS",
+    2000: "CERTIFIED_REFURBISHED",
+    2010: "EXCELLENT_REFURBISHED",
+    2020: "VERY_GOOD_REFURBISHED",
+    2030: "GOOD_REFURBISHED",
+    2500: "SELLER_REFURBISHED",
+    2750: "LIKE_NEW",
+    3000: "USED_EXCELLENT",
+    4000: "USED_VERY_GOOD",
+    5000: "USED_GOOD",
+    6000: "USED_ACCEPTABLE",
+    7000: "FOR_PARTS_OR_NOT_WORKING",
 }
