@@ -1,8 +1,12 @@
 """Functionality and base classes for any part of API."""
 
+import urllib.parse
+
+import json
+import hashlib
+from typing import Annotated, Any, Literal, Self, TYPE_CHECKING
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Annotated, Any, Literal, Self
 from collections.abc import Mapping
 from abc import ABC, abstractmethod
 
@@ -29,7 +33,7 @@ from utils.misc import snake_to_camel_case
 @dataclass
 class SearchEndpointResponse:
     json_response: Any
-    q: SearchEndpointQuery
+    search_value: str
     inferred_cat_id: int
     inferred_cat_name: str
 
@@ -73,8 +77,9 @@ _CONDITION_ID_MAP: dict[ConditionName, int] = {
 # ---------------------------- Helper Functions ----------------------------
 
 
-def _pipe_join_curly_wrap(v: list[str]) -> str:
-    return "{" + "|".join(v) + "}"
+def _pipe_join_curly_wrap_sorted(v: list[str]) -> str:
+    "Join list with pipes and wrap in curly braces after sorting."
+    return "{" + "|".join(sorted(v)) + "}"
 
 
 def _comma_colon_join_dict(d: dict[str, Any]):
@@ -84,18 +89,35 @@ def _comma_colon_join_dict(d: dict[str, Any]):
 # ---------------------------- Generic Types ----------------------------
 
 PipeSepStrList = Annotated[
-    list[str], PlainSerializer(lambda v: "{" + "|".join(v) + "}", return_type=str)
+    list[str],
+    PlainSerializer(_pipe_join_curly_wrap_sorted, return_type=str),
 ]
 
 CommaSepNumList = Annotated[
-    list[int | float], PlainSerializer(lambda v: ",".join(v), return_type=str)
+    list[int | float], PlainSerializer(lambda v: ",".join(sorted(v)), return_type=str)
 ]
 
 # API expects 'true', not 'True'
 LowercaseBool = Annotated[Literal[True], PlainSerializer(lambda v: str(v).lower())]
 
+LowercaseList = Annotated[
+    list[str],
+    PlainSerializer(lambda v: sorted([s.lower() for s in v]), return_type=list),
+]
 
 # ---------------------------- Base Classes ----------------------------
+
+
+class SearchPayloadParam(BaseModel, ABC):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    @abstractmethod
+    def serialize(self) -> str: ...
+
+    if TYPE_CHECKING:
+
+        def model_dump(self, *args: Any, **kwargs: Any) -> str:  # type: ignore[override]
+            return ""
 
 
 class RangeParam[T: (int, datetime)](BaseModel):
@@ -130,7 +152,7 @@ class RangeParam[T: (int, datetime)](BaseModel):
 # ---------------------------- Param Classes ----------------------------
 
 
-class IntRange(RangeParam[int]):
+class IntRange(RangeParam[int], SearchPayloadParam):
     @field_validator("lower_bd", "upper_bd")
     @classmethod
     def check_gt_zero(cls, v: int) -> int | None:
@@ -144,7 +166,7 @@ class IntRange(RangeParam[int]):
         return super()._range_to_str(self.lower_bd, self.upper_bd)
 
 
-class DatetimeRange(RangeParam[datetime]):
+class DatetimeRange(RangeParam[datetime], SearchPayloadParam):
     # Maybe check that the date is not before today,
     # if API does not support that.
 
@@ -168,13 +190,12 @@ class DatetimeRange(RangeParam[datetime]):
         )
 
 
-class SearchEndpointFilter(BaseModel):
+class SearchEndpointFilter(SearchPayloadParam):
     """
     Filters which are used by SearchEndpointPayload.\n
     Some conditions unique to the 'apparel' category have been omitted.
     """
 
-    # TODO: check that I can still instantiate by name and not by alias
     model_config = ConfigDict(
         alias_generator=AliasGenerator(serialization_alias=to_camel),
         serialize_by_alias=True,
@@ -191,7 +212,7 @@ class SearchEndpointFilter(BaseModel):
     conditions: (
         Annotated[
             list[Literal["NEW", "USED", "UNSPECIFIED"]],
-            PlainSerializer(_pipe_join_curly_wrap),
+            PlainSerializer(_pipe_join_curly_wrap_sorted),
         ]
         | None
     ) = None
@@ -202,12 +223,11 @@ class SearchEndpointFilter(BaseModel):
     )
 
     # ---------- BUYING FORMAT ----------
-    # See docstring for formatting rules
     bid_count: IntRange | None = None
     buying_options: (
         Annotated[
             list[Literal["FIXED_PRICE", "AUCTION", "BEST_OFFER", "CLASSIFIED_AD"]],
-            PlainSerializer(_pipe_join_curly_wrap),
+            PlainSerializer(_pipe_join_curly_wrap_sorted),
         ]
         | None
     ) = None
@@ -217,11 +237,13 @@ class SearchEndpointFilter(BaseModel):
     item_start_date: DatetimeRange | None = None
 
     # ---------- SELLER ----------
-    sellers: Annotated[list[str], PlainSerializer(_pipe_join_curly_wrap)] | None = None
+    sellers: (
+        Annotated[LowercaseList, PlainSerializer(_pipe_join_curly_wrap_sorted)] | None
+    ) = None
     seller_account_types: (
         Annotated[
             list[Literal["INDIVIDUAL", "BUSINESS"]],
-            PlainSerializer(_pipe_join_curly_wrap),
+            PlainSerializer(_pipe_join_curly_wrap_sorted),
         ]
         | None
     ) = None
@@ -269,46 +291,64 @@ class SearchEndpointFilter(BaseModel):
             return [_CONDITION_ID_MAP[name] for name in self.precise_conditions]
         return None
 
-    @model_serializer(mode="wrap")
+    @model_serializer(
+        mode="wrap",
+    )
     def serialize(self, handler: SerializerFunctionWrapHandler) -> str:
 
         data: dict[str, Any] = handler(self)
         return _comma_colon_join_dict(data)
 
 
-class SearchEndpointQuery(BaseModel):
-    q: list[str]
+class SearchEndpointQuery(SearchPayloadParam):
+    kwords: LowercaseList
+    excl_kwords: LowercaseList | None = None
     join_method: Literal["AND", "OR"]
 
-    @field_validator("q")
-    @classmethod
-    def validate_query(cls, v: list[str]) -> list[str]:
-        if len(" ".join(v)) > 100:
+    @model_validator(mode="after")
+    def validate_query(self) -> Self:
+        # +2 for the first ' -' in between them
+        if (
+            len(" ".join(self.kwords))
+            + (len(" -".join(self.excl_kwords)) + 2 if self.excl_kwords else 0)
+            > 100
+        ):
             raise ValueError("Combined length of query + spaces must be <=100.")
 
-        return v
+        return self
 
-    @model_serializer
-    def serialize(self) -> str:
+    @model_serializer(mode="wrap")
+    def serialize(self, handler: SerializerFunctionWrapHandler) -> str:
+        data: dict[str, Any] = handler(self)
+
+        query = ""
+
         if self.join_method == "AND":
-            return " ".join(self.q)
+            query = " ".join(data["kwords"])
 
         if self.join_method == "OR":
-            return (
-                "(" + ", ".join(self.q) + ")"
-            )  # Has a space as well as comma in docs for some reason
+            # Has a space as well as comma in docs for some reason
+            query = "(" + ", ".join(data["kwords"]) + ")"
 
-        raise ValueError()
+        if self.excl_kwords:
+            query += f" -{' -'.join(data['excl_kwords'])}"
+
+        return query
 
 
 # May not need serialization logic due to way params are handled by requests.get() automatically
 class SearchEndpointPayload(BaseModel):
     """
     All params for the Search Endpoint of the Browse API.
+    When epid or gtin are used, q must be empty.
+    epid and gtin can be used together.
+    If aspect filter specififed, category ID must be specified in both aspect filter and payload.
     """
 
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
     # epid and q are exclusive
-    q: SearchEndpointQuery
+    q: SearchEndpointQuery | None = None
 
     # Match any aspects of the items that are specific to that item
     # TODO: eg ...
@@ -325,7 +365,9 @@ class SearchEndpointPayload(BaseModel):
     category_ids: (
         Annotated[
             list[int],
-            PlainSerializer(lambda v: ",".join(str(x) for x in v), return_type=str),
+            PlainSerializer(
+                lambda v: ",".join(str(x) for x in sorted(v)), return_type=str
+            ),
         ]
         | None
     ) = None
@@ -345,17 +387,45 @@ class SearchEndpointPayload(BaseModel):
     ] = "MATCHING_ITEMS"  # Maybe set to None
     filter: SearchEndpointFilter | None = None
 
+    @computed_field
+    @property
+    def search_value(self) -> str:
+        v = ""
+        if self.q:
+            v += self.q.model_dump()
+
+        if self.epid:
+            v += str(self.epid)
+
+        if self.gtin:
+            v += str(self.gtin)
+
+        return v
+
     @field_validator("category_ids")
     @classmethod
     def ensure_one_category(cls, v: list[int] | None) -> list[int] | None:
         if v and len(v) > 1:
             raise ValueError("API expects max. one category.")
 
+    def __hash__(self) -> int:
+        """
+        Generate a hash for the instance.
+        Does not sort lists, assumes that any BaseModel params have handled sorting themselves.
+        """
+
+        url = urllib.parse.urlencode(self.model_dump())
+        return int.from_bytes(hashlib.md5(url.encode()).digest())
+
     # Maybe offset, limit will have an issue
     # See: https://developer.ebay.com/develop/api/buy/browse_api#buy-browse_api-item_summary-search:~:text=of%20items%20returned.-,Note,-%3A%20The%20value
     @model_validator(mode="after")
     def check_params(self) -> Self:
 
+        if not (self.q or self.epid or self.gtin):
+            raise ValueError("One of: q, epid, gtin must be specified.")
+
+        # But epid, gtin can be used together
         if self.q and (self.epid or self.gtin):
             raise ValueError("When q is specified, epid and gtin cannot be used.")
 

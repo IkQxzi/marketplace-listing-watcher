@@ -2,11 +2,11 @@ import time
 
 
 def get_timestamp() -> str:
-    """Get filename-friendly timestamp (accurate to minutes)."""
+    """Get filename-friendly timestamp (accurate to seconds)."""
 
     # Uses dash instead of dot between H & M
     # to prevent suffix problems with pathlib
-    return time.strftime("%Y-%m-%d_%H-%M")
+    return time.strftime("%Y-%m-%d_%H-%M-%S")
 
 
 def get_text_timestamp() -> str:
