@@ -241,7 +241,7 @@ class DatetimeRange(RangeParam[datetime], SearchPayloadParam):
 
         if v:
             v = v - timedelta(hours=1)  # Convert to UTC
-            return f"{v.isoformat()}Z"
+            return f"{v.isoformat().split('+')[0]}Z"
 
         return v
 

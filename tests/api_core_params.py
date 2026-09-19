@@ -1,4 +1,9 @@
-from api.core import SearchEndpointQuery, SearchEndpointFilter, IntRange, DatetimeRange
+from api.params import (
+    SearchEndpointQuery,
+    SearchEndpointFilter,
+    IntRange,
+    DatetimeRange,
+)
 
 from datetime import datetime
 

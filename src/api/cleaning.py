@@ -6,8 +6,8 @@ from typing import Annotated, Literal
 from pydantic import BaseModel, ConfigDict, Field, FileUrl, HttpUrl, computed_field
 
 from .constants import ConditionId, ConditionName, buyingOption
-from .core import CountryCode, Currency, Percentage, Price, Epid
-from .schemas import SearchEndpointResponse
+from .core import CountryCode, Currency, Epid, Percentage, Price
+from .schemas import SearchEndpointRawResponse
 
 
 # TODO: possibly allow CamelCase instantiation
@@ -94,6 +94,6 @@ class MarketingInfo(BaseModel):
     price_treatment: str  # TODO: implement Literal["MARKDOWN"]
 
 
-def clean_listings(response: SearchEndpointResponse) -> list[Listing]:
+def clean_listings(response: SearchEndpointRawResponse) -> list[Listing]:
     """Clean the API response and return a list of Listing objects"""
     raise NotImplementedError
