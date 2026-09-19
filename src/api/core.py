@@ -15,6 +15,8 @@ class SearchEndpointSavePaths(BaseModel):
     payload_hash: int
     base_dir: Path = ACTIVE_DIR
 
+    _timestamp: str = get_timestamp()
+
     @computed_field
     @property
     def item_dir(self) -> Path:
@@ -23,12 +25,12 @@ class SearchEndpointSavePaths(BaseModel):
     @computed_field
     @property
     def data_path(self) -> Path:
-        return self.item_dir / "data.json"
+        return self.item_dir / "data.csv"
 
     @computed_field
     @property
     def metadata_path(self) -> Path:
-        return self.item_dir / "metadata.json"
+        return self.item_dir / f"{self._timestamp}_metadata.json"
 
     @computed_field
     @property
@@ -38,7 +40,7 @@ class SearchEndpointSavePaths(BaseModel):
     @computed_field
     @property
     def raw_response_path(self) -> Path:
-        return self.item_dir / f"{get_timestamp()}_raw.json"
+        return self.item_dir / f"{self._timestamp}_raw.json"
 
     @model_validator(mode="after")
     def create_dirs(self) -> Self:

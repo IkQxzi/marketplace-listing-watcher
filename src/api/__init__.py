@@ -14,5 +14,5 @@ from api.params import (
     SearchEndpointPayload,
     SearchEndpointQuery,
 )
-from api.schemas import ResponseMetadata, SearchEndpointResponse
-from api.searcher import ListingSearcher, log_response
+from api.schemas import ResponseMetadata, SearchEndpointRawResponse
+from api.searching import ListingSearcher

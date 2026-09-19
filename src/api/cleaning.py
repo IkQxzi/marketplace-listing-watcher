@@ -13,7 +13,7 @@ from api import (
     Epid,
     Percentage,
     Price,
-    SearchEndpointResponse,
+    SearchEndpointRawResponse,
     buyingOption,
 )
 
@@ -102,6 +102,6 @@ class MarketingInfo(BaseModel):
     price_treatment: str  # TODO: implement Literal["MARKDOWN"]
 
 
-def clean_listings(response: SearchEndpointResponse) -> list[Listing]:
+def clean_listings(response: SearchEndpointRawResponse) -> list[Listing]:
     """Clean the API response and return a list of Listing objects"""
     raise NotImplementedError
