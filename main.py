@@ -8,7 +8,7 @@ import requests
 
 from api.auth import get_refresh_token, get_access_token
 from api import search_item
-from webscraper.parser import ListingParser
+from parsing.parser import ListingParser
 from config.dirs import ENV_PATH, TEMP_ACTIVE_DIR
 from utils.io import get_latest_search_json
 
