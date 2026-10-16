@@ -1,3 +1,5 @@
+_Describes the structure of saved eBay sold-listing pages as of August 2026._
+
 ### HTML Structure
 ---
 - **Delivery information**
