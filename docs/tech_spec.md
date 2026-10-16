@@ -7,11 +7,11 @@
 - Can restrict searches to within a category (e.g. GPUs, Phones, etc.)
 - Can do sophisticated name searching, like having lists of words where every word in the list is required in listing titles, or a list where any word in the list will do, or lists which contain words that cannot be included
 - Can make 5000 API calls per day
-**Sold listing webscraper:**
+**Sold listing pages (saved HTML, parsed locally):**
 - Displays information about sold products (sold price, date sold, etc.)
 - Does not list start date for each item
 - Has all the features of regular eBay searching for sold items (essentially can do all of the above)
-- Only limit is rate limit (but does not need to be polled as much, likely)\
+- The automated sold-listing fetcher was removed; pages are saved by the user and parsed\
 **Objectives:**
 1. For a given item name:
    (a) find out if that particular item is profitable
