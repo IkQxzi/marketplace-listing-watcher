@@ -1,4 +1,4 @@
-"""Various filters to be used across scraper, data-cleaning, API."""
+"""Various filters to be used across parser, data-cleaning, API."""
 
 from pydantic import BaseModel, Field
 from dataclasses import dataclass
