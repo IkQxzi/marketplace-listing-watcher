@@ -54,7 +54,7 @@ def generate_save_path(
     cat_id: int | None = None,
     cat_name: str | None = None,
 ) -> Path:
-    """Generate path for use in saving for scraper/API."""
+    """Generate path for use in saving for parser/API."""
 
     if is_active:
         base_path = log_dir / "active"
