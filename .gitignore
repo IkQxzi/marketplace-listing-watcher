@@ -17,3 +17,11 @@ dist/
 *.egg-info/
 .eggs/
 *.egg
+
+# Data, saved pages and secrets (never commit)
+logs/
+data/
+.env
+*_files/
+*.html
+!tests/fixtures/**/*.html
