@@ -8,9 +8,8 @@ import requests
 
 from api.auth import get_refresh_token, get_access_token
 from api import search_item
-from webscraper.scraper import ListingScraper
 from webscraper.parser import ListingParser
-from config.dirs import ENV_PATH, TEMP_ACTIVE_DIR, TEMP_LOG_DIR
+from config.dirs import ENV_PATH, TEMP_ACTIVE_DIR
 from utils.io import get_latest_search_json
 
 
@@ -64,12 +63,6 @@ def stats_test():
     do_stats(data_file)
 
 
-def scraper_test():
-
-    scraper = ListingScraper(headless=False, log_dir=TEMP_LOG_DIR, use_proxy=True)
-    scraper.get_sold_listings_html(item_name='iphone 14', condition='New')
-
-
 def html_test():
 
     parser = ListingParser()
@@ -78,7 +71,7 @@ def html_test():
     
 
 def main():
-    scraper_test()
+    raise NotImplementedError("No entry point yet: the sold-listing fetcher was removed.")
 
 if __name__ == '__main__':
     main()
