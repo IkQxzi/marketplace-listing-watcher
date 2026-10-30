@@ -2,9 +2,8 @@ import time
 
 import pytest
 
+from api import ListingSearcher, SearchEndpointPayload, log_response
 from api.auth import get_access_token
-from api.params import SearchEndpointPayload
-from api.searcher import ListingSearcher, log_response
 from config.api import APP_ID, CERT_ID, REFRESH_TOKEN
 from config.dirs import TEMP_ACTIVE_DIR
 from tests.api_core_params import (

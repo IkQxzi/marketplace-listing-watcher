@@ -2,7 +2,6 @@
 
 from dataclasses import dataclass
 from typing import Any
-from pydantic import BaseModel, computed_field
 
 
 @dataclass

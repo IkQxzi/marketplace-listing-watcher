@@ -22,7 +22,8 @@ from pydantic import (
 )
 from pydantic.alias_generators import to_camel
 
-from .constants import _CONDITION_ID_MAP, ConditionName
+from api import ConditionName
+from .constants import _CONDITION_ID_MAP
 
 # ---------------------------- Helper Functions ----------------------------
 

@@ -14,8 +14,8 @@ from utils.io import generate_save_path, write_to_dir
 from utils.misc import get_timestamp
 
 from .auth import get_access_token
-from .params import SearchEndpointPayload
-from .schemas import SearchEndpointResponse, ResponseMetadata
+from api import SearchEndpointPayload
+from api import SearchEndpointResponse, ResponseMetadata
 
 
 def log_response(api_response: SearchEndpointResponse, active_dir: Path) -> None:

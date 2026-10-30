@@ -2,7 +2,7 @@
 
 from pydantic import BaseModel, computed_field
 
-from .schemas import SearchEndpointResponse
+from api import SearchEndpointResponse
 
 
 class Listing(BaseModel):
