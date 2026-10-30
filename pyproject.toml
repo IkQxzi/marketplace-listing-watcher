@@ -21,11 +21,18 @@ dependencies = [
     "pydantic",
 ]
 
+[project.scripts]
+update-refresh = "scripts.update_refresh_token:main"
+
 [tool.setuptools.packages.find]
 where = ["src"]
 
-[tool.pytest.ini_options]
-norecursedirs = ["experiments"]
+[tool.pytest]
+norecursedirs = ["experiments"]  # For scruffy tests
+markers = [
+    "api: marks tests as polling live API"
+]
+
 
 [tool.ruff]
 target-version = "py314"
