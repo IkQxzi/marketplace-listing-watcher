@@ -4,25 +4,23 @@ import requests
 
 """Polling API for active listings."""
 
+import json
 from collections import Counter, defaultdict
 from pathlib import Path
 
-import requests
-import json
-
 from alerts.core import Alerter
 from config.api import SEARCH_ENDPOINT
-from utils.io import generate_log_path, write_to_dir
+from utils.io import generate_save_path, write_to_dir
 from utils.misc import get_timestamp
 
 from .auth import get_access_token
-from .core import SearchEndpointResponse, SearchEndpointPayload
+from .core import SearchEndpointPayload, SearchEndpointResponse
 
 
 def log_response(api_response: SearchEndpointResponse, active_dir: Path) -> None:
     """Log API response to file."""
 
-    item_dir = generate_log_path(
+    item_dir = generate_save_path(
         active_dir,
         api_response.search_value,
         is_active=True,

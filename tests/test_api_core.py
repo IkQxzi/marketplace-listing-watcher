@@ -1,20 +1,20 @@
 import json
 import random
+
 import pytest
 
 # Importing the filter class and its supporting types from your module
 from api.core import (
     IntRange,
     SearchEndpointFilter,
-    SearchEndpointQuery,
     SearchEndpointPayload,
+    SearchEndpointQuery,
 )
-
 from tests.api_core_params import (
-    EXAMPLE_FILTER_PARAMS,
-    SIMPLE_EXAMPLE_PAYLOAD_PARAMS,
     COMPLEX_EXAMPLE_PAYLOAD_PARAMS,
+    EXAMPLE_FILTER_PARAMS,
     EXAMPLE_QUERY_PARAMS,
+    SIMPLE_EXAMPLE_PAYLOAD_PARAMS,
 )
 
 
