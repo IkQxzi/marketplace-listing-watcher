@@ -1,32 +1,34 @@
+import time
+
 import pytest
 
+from api.auth import get_access_token
 from api.core import SearchEndpointPayload
 from api.searcher import ListingSearcher, log_response
-from api.auth import get_access_token
-from config.api import REFRESH_TOKEN, APP_ID, CERT_ID
+from config.api import APP_ID, CERT_ID, REFRESH_TOKEN
 from config.dirs import TEMP_ACTIVE_DIR
-
-import time
 from tests.api_core_params import (
-    SIMPLE_EXAMPLE_PAYLOAD_PARAMS,
-    COMPLEX_EXAMPLE_PAYLOAD_PARAMS,
     EXAMPLE_EXCL_KWORDS_PAYLOAD_PARAMS,
+    SIMPLE_EXAMPLE_PAYLOAD_PARAMS,
 )
 
+if not (REFRESH_TOKEN and APP_ID and CERT_ID):
+    pytest.mark.skip("API creds missing, skipping live API tests")
 
+
+@pytest.mark.api
 def test_listing_searcher():
     payload = SearchEndpointPayload(**SIMPLE_EXAMPLE_PAYLOAD_PARAMS)
     searcher = ListingSearcher()
 
-    assert REFRESH_TOKEN and APP_ID and CERT_ID
     access_token = get_access_token(REFRESH_TOKEN, APP_ID, CERT_ID)
     response = searcher.get_listings(access_token, payload)
 
     log_response(response, TEMP_ACTIVE_DIR)
 
 
+@pytest.mark.api
 def test_excl_kwords():
-    assert REFRESH_TOKEN and APP_ID and CERT_ID
     access_token = get_access_token(REFRESH_TOKEN, APP_ID, CERT_ID)
 
     searcher = ListingSearcher()

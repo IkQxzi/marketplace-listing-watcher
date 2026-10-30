@@ -78,7 +78,7 @@ SIMPLE_EXAMPLE_PAYLOAD_PARAMS = {
 EXAMPLE_EXCL_KWORDS_PAYLOAD_PARAMS = {
     "q": {
         "kwords": ["laptop", "thinkpad"],
-        "excl_kwords": ["case", "accessory", "t480"],
+        "excl_kwords": ["case", "accessory", "t480", "ssd"],
         "join_method": "AND",
     },
     "limit": 50,
