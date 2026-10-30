@@ -9,13 +9,12 @@ from collections import Counter, defaultdict
 from pathlib import Path
 
 from alerts.core import Alerter
+from api import ResponseMetadata, SearchEndpointPayload, SearchEndpointResponse
 from config.api import SEARCH_ENDPOINT
-from utils.io import generate_save_path, write_to_dir
+from utils.io import generate_save_path
 from utils.misc import get_timestamp
 
 from .auth import get_access_token
-from api import SearchEndpointPayload
-from api import SearchEndpointResponse, ResponseMetadata
 
 
 def log_response(
@@ -37,7 +36,7 @@ def log_response(
     print(f"json_path: {json_path}")
 
     with json_path.open(mode="w") as f:
-        json.dump(api_response.json_response, f)
+        json.dump(api_response._raw_json, f)
 
 
 class ListingSearcher:
