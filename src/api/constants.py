@@ -19,7 +19,7 @@ type ConditionName = Literal[
     "FOR_PARTS_OR_NOT_WORKING",
 ]
 
-CONDITION_ID_MAP: dict[ConditionName, int] = {
+_CONDITION_ID_MAP: dict[ConditionName, int] = {
     "NEW": 1000,
     "NEW_OTHER": 1500,
     "NEW_WITH_DEFECTS": 1750,

@@ -21,4 +21,4 @@ class SearchEndpointResponse:
     search_value: str
     inferred_cat_id: int
     inferred_cat_name: str
-    _raw_json: Any | None
+    _raw_json: Any | None = None

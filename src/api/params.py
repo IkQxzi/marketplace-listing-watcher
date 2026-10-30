@@ -1,5 +1,7 @@
 """Parameter classes for use with the Search Endpoint."""
 
+from __future__ import annotations
+
 import hashlib
 import urllib.parse
 from abc import ABC, abstractmethod
@@ -20,7 +22,7 @@ from pydantic import (
 )
 from pydantic.alias_generators import to_camel
 
-from .constants import CONDITION_ID_MAP, ConditionName
+from .constants import _CONDITION_ID_MAP, ConditionName
 
 # ---------------------------- Helper Functions ----------------------------
 
@@ -46,7 +48,9 @@ class SearchEndpointPayload(BaseModel):
     If aspect filter specififed, category ID must be specified in both aspect filter and payload.
     """
 
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+    model_config = ConfigDict(
+        extra="forbid", validate_assignment=True, defer_build=True
+    )
 
     filter: SearchEndpointFilter
 
@@ -177,7 +181,7 @@ class SearchPayloadParam(BaseModel, ABC):
             return ""
 
 
-class RangeParam[T: (int, datetime)](BaseModel):
+class _RangeParam[T: (int, datetime)](BaseModel):
     lower_bd: T | None = None
     upper_bd: T | None = None
 
@@ -209,7 +213,7 @@ class RangeParam[T: (int, datetime)](BaseModel):
 # ---------------------------- Param Classes ----------------------------
 
 
-class IntRange(RangeParam[int], SearchPayloadParam):
+class IntRange(_RangeParam[int], SearchPayloadParam):
     @field_validator("lower_bd", "upper_bd")
     @classmethod
     def check_gt_zero(cls, v: int) -> int | None:
@@ -223,7 +227,7 @@ class IntRange(RangeParam[int], SearchPayloadParam):
         return super()._range_to_str(self.lower_bd, self.upper_bd)
 
 
-class DatetimeRange(RangeParam[datetime], SearchPayloadParam):
+class DatetimeRange(_RangeParam[datetime], SearchPayloadParam):
     # Maybe check that the date is not before today,
     # if API does not support that.
 
@@ -345,7 +349,7 @@ class SearchEndpointFilter(SearchPayloadParam):
     @property
     def condition_ids(self) -> list[int] | None:
         if self.precise_conditions:
-            return [CONDITION_ID_MAP[name] for name in self.precise_conditions]
+            return [_CONDITION_ID_MAP[name] for name in self.precise_conditions]
         return None
 
     @model_serializer(mode="wrap")

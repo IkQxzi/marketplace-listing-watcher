@@ -4,7 +4,7 @@ import random
 import pytest
 
 # Importing the filter class and its supporting types from your module
-from api.core import (
+from api.params import (
     IntRange,
     SearchEndpointFilter,
     SearchEndpointPayload,
