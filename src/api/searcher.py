@@ -14,7 +14,8 @@ from utils.io import generate_save_path, write_to_dir
 from utils.misc import get_timestamp
 
 from .auth import get_access_token
-from .core import SearchEndpointPayload, SearchEndpointResponse
+from api import SearchEndpointPayload
+from api import SearchEndpointResponse, ResponseMetadata
 
 
 def log_response(api_response: SearchEndpointResponse, active_dir: Path) -> None:
@@ -28,7 +29,7 @@ def log_response(api_response: SearchEndpointResponse, active_dir: Path) -> None
         cat_name=api_response.inferred_cat_name,
     )
 
-    write_to_dir(api_response.json_response, item_dir, file_ext="json")
+    write_to_dir(api_response._raw_json, item_dir, file_ext="json")
 
 
 class ListingSearcher:
@@ -105,7 +106,14 @@ class ListingSearcher:
         #     print(f"{(cat_id_str)}/{cat_mappings[int(cat_id_str)]}: {cat_count}")
 
         return SearchEndpointResponse(
-            json_response=r_json,
+            item_summaries=item_summaries,
+            metadata=ResponseMetadata(
+                href=r_json["href"],
+                total=r_json["total"],
+                limit=r_json["limit"],
+                offset=r_json["offset"],
+                next=r_json["next"],
+            ),
             search_value=payload.search_value,
             inferred_cat_id=cat_id,
             inferred_cat_name=cat_name,

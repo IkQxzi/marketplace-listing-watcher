@@ -2,9 +2,8 @@ import time
 
 import pytest
 
+from api import ListingSearcher, SearchEndpointPayload, log_response
 from api.auth import get_access_token
-from api.core import SearchEndpointPayload
-from api.searcher import ListingSearcher, log_response
 from config.api import APP_ID, CERT_ID, REFRESH_TOKEN
 from config.dirs import TEMP_ACTIVE_DIR
 from tests.api_core_params import (
@@ -39,9 +38,7 @@ def test_excl_kwords():
     regular_payload = SearchEndpointPayload(**EXAMPLE_EXCL_KWORDS_PAYLOAD_PARAMS)
     reg_response = searcher.get_listings(access_token, regular_payload)
 
-    reg_listing_titles = [
-        listing["title"] for listing in reg_response.json_response["itemSummaries"]
-    ]
+    reg_listing_titles = [listing["title"] for listing in reg_response.item_summaries]
 
     # eBay is case-insensitive
     # eBay only checks if whole word is found (hence space)
@@ -54,8 +51,7 @@ def test_excl_kwords():
         )
 
     excl_kwords_listing_titles = [
-        listing["title"]
-        for listing in excl_kwords_response.json_response["itemSummaries"]
+        listing["title"] for listing in excl_kwords_response.item_summaries
     ]
 
     if any(
