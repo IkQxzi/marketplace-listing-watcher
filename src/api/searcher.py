@@ -1,12 +1,10 @@
 """Polling API for active listings."""
 
-import requests
-
-"""Polling API for active listings."""
-
 import json
 from collections import Counter, defaultdict
 from pathlib import Path
+
+import requests
 
 from alerts.core import Alerter
 from api import ResponseMetadata, SearchEndpointPayload, SearchEndpointResponse

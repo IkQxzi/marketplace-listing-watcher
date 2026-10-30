@@ -155,7 +155,8 @@ PipeSepStrList = Annotated[
 ]
 
 CommaSepNumList = Annotated[
-    list[int | float], PlainSerializer(lambda v: ",".join(sorted(v)), return_type=str)
+    list[int | float],
+    PlainSerializer(lambda v: ",".join(sorted(str(v))), return_type=str),
 ]
 
 # API expects 'true', not 'True'
