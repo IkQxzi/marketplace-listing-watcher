@@ -22,8 +22,8 @@ from pydantic import (
 )
 from pydantic.alias_generators import to_camel
 
-from api import ConditionName
-from .constants import _CONDITION_ID_MAP
+from api import ConditionName, CountryCode, Currency, Epid, buyingOption
+from api.constants import _CONDITION_NAME_MAP
 
 # ---------------------------- Helper Functions ----------------------------
 
@@ -50,7 +50,9 @@ class SearchEndpointPayload(BaseModel):
     """
 
     model_config = ConfigDict(
-        extra="forbid", validate_assignment=True, defer_build=True
+        extra="forbid",
+        validate_assignment=True,
+        defer_build=True,  # So classes defined lower in file can be type-hinted to
     )
 
     filter: SearchEndpointFilter
@@ -79,7 +81,7 @@ class SearchEndpointPayload(BaseModel):
         ]
         | None
     ) = None
-    epid: int | None = None  # eBay Product ID
+    epid: Epid | None = None  # eBay Product ID
     gtin: int | None = None  # UPC, EAN, ISBN
     limit: Annotated[int, Field(ge=1, le=200)] = 50
     offset: int = 0
@@ -155,7 +157,8 @@ PipeSepStrList = Annotated[
 ]
 
 CommaSepNumList = Annotated[
-    list[int | float], PlainSerializer(lambda v: ",".join(sorted(v)), return_type=str)
+    list[int | float],
+    PlainSerializer(lambda v: ",".join(sorted(str(v))), return_type=str),
 ]
 
 # API expects 'true', not 'True'
@@ -241,7 +244,7 @@ class DatetimeRange(_RangeParam[datetime], SearchPayloadParam):
 
         if v:
             v = v - timedelta(hours=1)  # Convert to UTC
-            return f"{v.isoformat()}Z"
+            return f"{v.isoformat().split('+')[0]}Z"
 
         return v
 
@@ -268,7 +271,7 @@ class SearchEndpointFilter(SearchPayloadParam):
 
     # ---------- PRICE ----------
     price: IntRange
-    price_currency: str = "GBP"
+    price_currency: Currency = "GBP"
 
     # ---------- CONDITION ----------
     conditions: (
@@ -288,7 +291,7 @@ class SearchEndpointFilter(SearchPayloadParam):
     bid_count: IntRange | None = None
     buying_options: (
         Annotated[
-            list[Literal["FIXED_PRICE", "AUCTION", "BEST_OFFER", "CLASSIFIED_AD"]],
+            list[buyingOption],
             PlainSerializer(_pipe_join_curly_wrap_sorted),
         ]
         | None
@@ -314,7 +317,7 @@ class SearchEndpointFilter(SearchPayloadParam):
     # TODO: research if item_location_region/country are required
     # ISO 3166
     # item_location_country: str = "GB"
-    delivery_country: str = "GB"
+    delivery_country: CountryCode = "GB"
 
     @model_validator(mode="after")
     def validate_params(self) -> Self:
@@ -350,7 +353,7 @@ class SearchEndpointFilter(SearchPayloadParam):
     @property
     def condition_ids(self) -> list[int] | None:
         if self.precise_conditions:
-            return [_CONDITION_ID_MAP[name] for name in self.precise_conditions]
+            return [_CONDITION_NAME_MAP[name] for name in self.precise_conditions]
         return None
 
     @model_serializer(mode="wrap")

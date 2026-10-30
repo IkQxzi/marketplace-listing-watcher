@@ -14,7 +14,7 @@ class ResponseMetadata:
 
 
 @dataclass
-class SearchEndpointResponse:
+class SearchEndpointRawResponse:
     item_summaries: dict  # TODO: Document this better
     metadata: ResponseMetadata  # And this
     search_value: str
