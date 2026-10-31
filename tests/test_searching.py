@@ -1,11 +1,22 @@
 import csv
 import time
 
+import pytest
+
 from api.auth import get_access_token
 from api.core import SearchEndpointSavePaths
 from api.params import SearchEndpointPayload
 from api.searching import ListingSearcher
 from config.api import APP_ID, CERT_ID, REFRESH_TOKEN
+
+# Skip live tests in CI
+pytestmark = [
+    pytest.mark.api,
+    pytest.mark.skipif(
+        not (REFRESH_TOKEN and APP_ID and CERT_ID),
+        reason="needs eBay API creds in .env",
+    ),
+]
 from config.dirs import TEMP_ACTIVE_DIR
 from tests.api_core_params import (
     EXAMPLE_EXCL_KWORDS_PAYLOAD_PARAMS,
