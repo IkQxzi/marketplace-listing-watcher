@@ -2,16 +2,16 @@
 
 from pathlib import Path
 
-ROOT_DIR = Path(__file__).parent.parent.parent
+ROOT_DIR = Path(__file__).resolve().parent.parent.parent
 
 CONFIG_DIR = ROOT_DIR / "configs"
-LOG_DIR = ROOT_DIR / "data"
-SOLD_DIR = LOG_DIR / "sold"
-ACTIVE_DIR = LOG_DIR / "active"  # /search/catId_catName
+DATA_DIR = ROOT_DIR / "data"
+SOLD_DIR = DATA_DIR / "sold"
+ACTIVE_DIR = DATA_DIR / "active"  # /search/catId_catName
 ENV_PATH = ROOT_DIR / ".env"
 
 # Temporary
-TEMP_LOG_DIR = ROOT_DIR / "temp_logs"
-TEMP_SOLD_DIR = TEMP_LOG_DIR / "sold"
-TEMP_ACTIVE_DIR = TEMP_LOG_DIR / "active"
-TEMP_STATS_DIR = TEMP_LOG_DIR / "stats"
+TEMP_DATA_DIR = ROOT_DIR / "temp_data"
+TEMP_SOLD_DIR = TEMP_DATA_DIR / "sold"
+TEMP_ACTIVE_DIR = TEMP_DATA_DIR / "active"
+TEMP_STATS_DIR = TEMP_DATA_DIR / "stats"
