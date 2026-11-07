@@ -1,18 +1,17 @@
-import click
-
 from pathlib import Path
 
+import click
+
+from config.dirs import DATA_DIR, TEMP_DATA_DIR
 from parsing.parser import ListingParser
-from config.dirs import LOG_DIR, TEMP_LOG_DIR
 
-
-LOG_DIRS = {"temp": str(TEMP_LOG_DIR)}
+LOG_DIRS = {"temp": str(TEMP_DATA_DIR)}
 
 
 @click.command(name=None)  # Nameless so 'main' does not need to be entered
 @click.argument("html_file")
 @click.argument("item_name")
-@click.option("--output_dir", "--dir", default=str(LOG_DIR))
+@click.option("--output_dir", "--dir", default=str(DATA_DIR))
 @click.option(
     "--save_df/--no_save_df", "--sd/--nsd", default=True, help="Save the df output."
 )  # NOTE: Even if disabled, output_dir always required

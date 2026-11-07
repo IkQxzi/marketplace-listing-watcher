@@ -1,12 +1,14 @@
 """Polling API for active listings."""
 
-import csv
 import json
+import logging
 from collections import Counter, defaultdict
+from dataclasses import asdict
 from datetime import datetime
 from pathlib import Path
 
 import requests
+from pydantic import ValidationError
 
 from alerts.core import Alerter
 from api import (
@@ -15,12 +17,26 @@ from api import (
     SearchEndpointPayload,
     SearchEndpointRawResponse,
     SearchEndpointSavePaths,
+    get_sorted_listings_json,
+    get_sorted_listings,
 )
 from api.auth import get_access_token
+from api.cleaning import Listing
 from config.api import SEARCH_ENDPOINT
 from config.dirs import ACTIVE_DIR, TEMP_ACTIVE_DIR
 from utils.io import generate_save_path
 from utils.misc import get_timestamp
+
+logging.basicConfig(level=logging.DEBUG)
+
+file_handler = logging.FileHandler("listings.log", encoding="utf-8")
+file_handler.setLevel(logging.DEBUG)
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.DEBUG)
+
+logger = logging.getLogger(__name__)
+logger.addHandler(file_handler)
+logger.addHandler(console_handler)
 
 
 def _log_response(
@@ -39,7 +55,6 @@ def _log_response(
     )
 
     json_path = item_dir / f"{hash(payload)!s}.json"
-    print(f"json_path: {json_path}")
 
     with json_path.open(mode="w") as f:
         json.dump(api_response._raw_json, f)
@@ -84,9 +99,15 @@ class ListingSearcher:
 
         latest_timestamp = None
         if save_paths.data_path.exists():
+            logging.debug(f"Existing data found at {save_paths.data_path}")
+            (f"Existing data found at {save_paths.data_path}")
             latest_timestamp = self._get_latest_timestamp(save_paths.data_path)
 
-        return self._get_listings_after(access_token, latest_timestamp)
+        resp = self._get_listings_after(access_token, latest_timestamp)
+
+        self._write_to_save_paths(save_paths, resp)
+
+        return resp
 
     def _get_listings_after(
         self,
@@ -154,18 +175,55 @@ class ListingSearcher:
 
         return response
 
+    def _write_to_save_paths(
+        self, paths: SearchEndpointSavePaths, resp: SearchEndpointRawResponse
+    ) -> None:
+        """Write the payload config, the data from response, metadata, the raw response to files."""
+
+        with paths.raw_response_path.open(mode="a") as f:
+            logging.debug(f"Writing raw response to {paths.raw_response_path}...")
+            json.dump(resp._raw_json, f, indent=2)
+
+        # Data is already sorted newest first
+        try:
+            with paths.data_path.open(mode="a") as f:
+                logging.debug(f"Writing data to {paths.data_path}...")
+                json.dump(get_sorted_listings(resp), f, indent=2)
+
+        except ValidationError as e:
+            e.add_note(f"Validation errors. Wrote raw output to {paths.fail_path}")
+
+            with paths.fail_path.open(mode="w") as f:
+                json.dump(resp.metadata, f, indent=2)
+                json.dump(self.payload.model_dump(), f, indent=2)
+                json.dump(resp.item_summaries, f, indent=2)
+
+            raise
+
+        with paths.metadata_path.open(mode="w") as f:
+            logging.debug(f"Writing metadata to {paths.metadata_path}...")
+
+            json.dump(asdict(resp.metadata), f, indent=2)
+
+        if not paths.config_path.exists():
+            with paths.config_path.open(mode="w") as f:
+                logging.debug(f"Writing config to {paths.config_path}...")
+                json.dump(self.payload.model_dump(), f, indent=2)
+
+        return
+
     def _get_latest_timestamp(self, data_path: Path) -> datetime:
+        """Gets latest timestamp. Assumes it is at the top of the file (so newest first)."""
+
         with data_path.open(mode="r", encoding="utf-8") as f:
-            reader = csv.reader(f)
-            timestamp_ind = list(next(reader)).index("timestamp")
-            latest_timestamp = datetime.fromisoformat(list(next(reader))[timestamp_ind])
+            latest_listing_json = json.load(f)[0]
 
-        if not isinstance(latest_timestamp, datetime):
-            raise ValueError(
-                "Timestamp from ListingSearcher._get_latest_timestamp() is not datetime object."
-            )
+            # Should ensure datetime on its own
+            latest_timestamp = Listing.model_validate_json(
+                latest_listing_json
+            ).item_creation_date
 
-        return latest_timestamp  # TODO: convert to datetime
+        return latest_timestamp
 
     def _parse_categories(
         self, item_summaries: list[dict]

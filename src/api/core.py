@@ -32,7 +32,7 @@ class SearchEndpointSavePaths(BaseModel):
     @computed_field
     @property
     def data_path(self) -> Path:
-        return self.item_dir / "data.csv"
+        return self.item_dir / "data.json"  # yh we use json now
 
     # Unique to each request
     @computed_field
