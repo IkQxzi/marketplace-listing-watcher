@@ -28,15 +28,7 @@ from utils.io import generate_save_path
 from utils.misc import get_timestamp
 
 logging.basicConfig(level=logging.DEBUG)
-
-file_handler = logging.FileHandler("listings.log", encoding="utf-8")
-file_handler.setLevel(logging.DEBUG)
-console_handler = logging.StreamHandler()
-console_handler.setLevel(logging.DEBUG)
-
 logger = logging.getLogger(__name__)
-logger.addHandler(file_handler)
-logger.addHandler(console_handler)
 
 
 def _log_response(
