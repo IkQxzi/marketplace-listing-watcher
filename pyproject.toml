@@ -26,6 +26,9 @@ update-refresh = "scripts.update_refresh_token:main"
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.ty.environment]
+python = ".venv"
+
 [tool.pytest]
 norecursedirs = ["experiments"]  # For scruffy tests
 markers = [

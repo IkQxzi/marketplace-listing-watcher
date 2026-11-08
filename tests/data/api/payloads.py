@@ -1,34 +1,23 @@
-from api.params import (
-    SearchEndpointQuery,
-    SearchEndpointFilter,
-    IntRange,
-    DatetimeRange,
-)
+"""Some payload params for testing (see api/params.py)."""
 
-from datetime import datetime
-
-EXAMPLE_QUERY_PARAMS = {
-    "kwords": ["laptop", "thinkpad"],
-    "excl_kwords": ["case", "accessory"],
-    "join_method": "AND",
-}
-
-
-EXAMPLE_FILTER_PARAMS = {
-    "search_in_description": True,
-    "price": {
-        "lower_bd": 50,
-        "upper_bd": 300,
+SIMPLE_EXAMPLE_PAYLOAD_PARAMS = {
+    "q": {
+        "kwords": ["laptop", "thinkpad"],
+        "join_method": "AND",
     },
-    "price_currency": "GBP",
-    "conditions": ["NEW", "USED"],
-    "bid_count": {
-        "lower_bd": 1,
-        "upper_bd": 5,
+    "limit": 50,
+    "offset": 0,
+    "fieldgroups": "MATCHING_ITEMS",
+    "filter": {
+        "search_in_description": True,
+        "price": {
+            "lower_bd": 150,
+            "upper_bd": 600,
+        },
+        "price_currency": "GBP",
+        "conditions": ["NEW", "USED"],
+        "delivery_country": "GB",
     },
-    "buying_options": ["FIXED_PRICE", "AUCTION"],
-    "seller_account_types": ["BUSINESS"],
-    "delivery_country": "GB",
 }
 
 COMPLEX_EXAMPLE_PAYLOAD_PARAMS = {
@@ -55,27 +44,6 @@ COMPLEX_EXAMPLE_PAYLOAD_PARAMS = {
         },
         "buying_options": ["FIXED_PRICE", "AUCTION"],
         "seller_account_types": ["BUSINESS"],
-        "delivery_country": "GB",
-    },
-}
-
-
-SIMPLE_EXAMPLE_PAYLOAD_PARAMS = {
-    "q": {
-        "kwords": ["laptop", "thinkpad"],
-        "join_method": "AND",
-    },
-    "limit": 50,
-    "offset": 0,
-    "fieldgroups": "MATCHING_ITEMS",
-    "filter": {
-        "search_in_description": True,
-        "price": {
-            "lower_bd": 150,
-            "upper_bd": 600,
-        },
-        "price_currency": "GBP",
-        "conditions": ["NEW", "USED"],
         "delivery_country": "GB",
     },
 }

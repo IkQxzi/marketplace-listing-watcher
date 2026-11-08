@@ -5,12 +5,12 @@ from pathlib import Path
 import pandas as pd
 from bs4 import BeautifulSoup, Tag
 
-from config.dirs import LOG_DIR
+from config.dirs import DATA_DIR
 from utils.io import generate_save_path, write_df_to_dir
 
 
 class ListingParser:
-    def __init__(self, save_df=True, log_dir: Path = LOG_DIR) -> None:
+    def __init__(self, save_df=True, log_dir: Path = DATA_DIR) -> None:
         self.log_dir = log_dir
         self.save_df = save_df
 

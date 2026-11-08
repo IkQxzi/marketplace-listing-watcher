@@ -1,8 +1,6 @@
 .idea/
 .obsidian/
 **/__pycache__/
-experiments/
-temp_logs/
 *.env
 .ignore
 
@@ -18,10 +16,13 @@ dist/
 .eggs/
 *.egg
 
-# Data, saved pages and secrets (never commit)
+# Data
 logs/
-data/
-.env
+/data/  # Do not skip tests/data
+temp_data/
+temp_logs/
 *_files/
 *.html
-!tests/fixtures/**/*.html
+
+# Custom
+experiments/

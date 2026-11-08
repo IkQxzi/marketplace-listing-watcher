@@ -22,8 +22,9 @@ from pydantic import (
 )
 from pydantic.alias_generators import to_camel
 
-from api import ConditionName, CountryCode, Currency, Epid, buyingOption
+from api import ConditionName
 from api.constants import _CONDITION_NAME_MAP
+from core.types import CountryCode, Currency, Epid, buyingOption
 
 # ---------------------------- Helper Functions ----------------------------
 

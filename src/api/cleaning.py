@@ -1,107 +1,166 @@
-"""Cleaning raw API response into clean listing objects."""
+"""
+Cleaning raw API response into clean listing objects.
+For now, is quite minimal, only enough to run the API loop.
+"""
+
+from __future__ import annotations
 
 from datetime import datetime
-from typing import Annotated, Literal
+from typing import Annotated, Literal, Self
 
-from pydantic import BaseModel, ConfigDict, Field, FileUrl, HttpUrl, computed_field
+from pydantic import (
+    AliasPath,
+    BaseModel,
+    ConfigDict,
+    Field,
+    HttpUrl,
+    PlainValidator,
+    ValidationError,
+    computed_field,
+    field_serializer,
+    field_validator,
+    model_validator,
+)
+from pydantic.alias_generators import to_camel
 
 from api import (
-    ConditionId,
     ConditionName,
-    CountryCode,
-    Currency,
-    Epid,
-    Percentage,
-    Price,
     SearchEndpointRawResponse,
-    buyingOption,
 )
+from core.types import CountryCode, Currency, Percentage, Price, buyingOption
 
 
 # TODO: possibly allow CamelCase instantiation
 class Listing(BaseModel):
     """
     Class for an individual listing.\n
-    Search Endpoint gives price after discounts (see MarketingInfo for original price).\n
+    Search Endpoint gives price after discounts (will implement marketing_info for original price).\n
     Note that a list of category names is omitted,
     as this may be implemented as a separate mapping somewhere else.\n
     """
 
     # So classes defined lower in file can be type-hinted to
-    model_config = ConfigDict(defer_build=True)
+    model_config = ConfigDict(
+        defer_build=True, alias_generator=to_camel, validate_by_alias=True
+    )
 
-    # ---------- IDs ----------
+    # ---------- IDs/Name ----------
+    title: str
     item_id: str
-    legacy_item_id: int
-    marketplace_id: str
-    epid: Epid
 
     # ---------- Price/Purchasing ----------
     # TODO: implement conversion to GBP always
-    price: Price  # After discounts
-    currency: Currency
-    buying_options = list[buyingOption]
-    unit_pricing_measure: Literal["Unit"] | None = None
-    unit_price: Price | None = None
-    has_coupons: bool
+    price: Annotated[
+        Price | None, Field(validation_alias=AliasPath("price", "value"))
+    ] = None  # After discounts, can be either this or bid price
+    bid_price: Annotated[
+        Price | None, Field(validation_alias=AliasPath("currentBidPrice", "value"))
+    ] = None
+    buying_options: list[buyingOption]
+    has_coupons: Annotated[bool, Field(validation_alias=AliasPath("availableCoupons"))]
 
     # ---------- Condition ----------
-    condition: ConditionName
-    condition_id: ConditionId
+    condition: Annotated[ConditionName, PlainValidator(lambda v: v.upper())]
 
     # ---------- Dates ----------
+    def to_dt(v: str) -> datetime:
+        return datetime.fromisoformat(v)
+
     item_origin_date: datetime
     item_creation_date: datetime
 
     # ---------- URLs ----------
-    href: HttpUrl
-    web_url: HttpUrl
-    thumbnail_image_urls: list[FileUrl]
-    image_urls: list[FileUrl]  # Most listings only have 1 image
-    group_href: HttpUrl | None
+    href: Annotated[HttpUrl, Field(validation_alias=AliasPath("itemHref"))]
+    web_url: Annotated[HttpUrl, Field(validation_alias=AliasPath("itemWebUrl"))]
 
     # ---------- Shipping ----------
-    shipping_price: Price  # TODO alias: shipping_cost
-    shipping_price_type: str  # TODO: find Literals
-
-    # ---------- Categories ----------
-    category_ids: list[int]
-    leaf_category_ids: list[int]
+    shipping_price: Annotated[
+        Price,
+        Field(
+            validation_alias=AliasPath("shippingOptions", 0, "shippingCost", "value")
+        ),
+    ]  # TODO alias: shipping_cost
 
     # ---------- Location ----------
-    postcode: str  # Is censored, pretty sure
-    country_code: CountryCode
+    postcode: Annotated[
+        str | None, Field(validation_alias=AliasPath("itemLocation", "postalCode"))
+    ] = None  # Is censored: LD1***
+    country_code: Annotated[
+        CountryCode, Field(validation_alias=AliasPath("itemLocation", "country"))
+    ]
 
     # ---------- Seller ----------
     seller: Seller
 
     # ---------- Misc. ----------
     priority_listing: bool
-    item_group_type: Literal["SELLER_DEFINED_VARIATIONS"] | None
+
+    @model_validator(mode="after")
+    def ensure_price(self) -> Self:
+
+        if not (self.price or self.bid_price):
+            raise ValidationError("Both price and bid price not present!")
+
+        return self
 
     @computed_field
     @property
-    def total_price(self) -> float:
-        return self.price + self.shipping_price
+    def total_price(self) -> Price:
+        return (self.price or self.bid_price) + self.shipping_price
+
+    @field_validator("item_creation_date", "item_origin_date", mode="before")
+    @classmethod
+    def convert_to_datetime(cls, v: str) -> datetime:
+        return datetime.fromisoformat(v)
+
+    @field_serializer("item_creation_date", "item_origin_date", mode="plain")
+    def convert_dt_to_str(self, v: datetime) -> str:
+        return datetime.isoformat(v)
+
+    @field_serializer("href", "web_url", mode="plain")
+    def convert_http_url_to_str(self, v: HttpUrl) -> str:
+        return str(v)
 
     ...
 
 
 class Seller(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, validate_by_alias=True)
+
     username: str
     feedback_percentage: Percentage
-    feedback_Score: Annotated[int, Field(ge=0)]
-    account_type: Literal["BUSINESS", "INDIVIDUAL"]
-    price_treatment: Literal["MARKDOWN"] | None
+    feedback_score: Annotated[
+        int, Field(ge=0)
+    ]  # Have no idea what the scale of this is yet
+    account_type: Annotated[
+        Literal["BUSINESS", "INDIVIDUAL"],
+        Field(validation_alias=AliasPath("sellerAccountType")),
+    ]
 
 
 class MarketingInfo(BaseModel):
     original_price: Annotated[float, Field(ge=0)]
     currency: Currency
     discount_percentage: Percentage
-    price_treatment: str  # TODO: implement Literal["MARKDOWN"]
 
 
-def clean_listings(response: SearchEndpointRawResponse) -> list[Listing]:
-    """Clean the API response and return a list of Listing objects"""
-    raise NotImplementedError
+def _get_listing_creation_datetime(listing: Listing) -> datetime:
+    return listing.item_creation_date
+
+
+def _sort_listings(response: SearchEndpointRawResponse) -> list[Listing]:
+    listings = [Listing.model_validate(item) for item in response.item_summaries]
+    listings.sort(key=_get_listing_creation_datetime, reverse=True)
+    return listings
+
+
+def get_sorted_listings_json(response: SearchEndpointRawResponse) -> list[str]:
+    """Clean the API response and return a list of json-encoded Listings, sorted newest at start of list."""
+
+    return [listing.model_dump_json() for listing in _sort_listings(response)]
+
+
+def get_sorted_listings(response: SearchEndpointRawResponse) -> list[dict]:
+    """Clean the API response and return a list of dict-encoded Listings, sorted newest at start of list."""
+
+    return [listing.model_dump() for listing in _sort_listings(response)]

@@ -2,8 +2,6 @@
 
 from typing import Literal
 
-type buyingOption = Literal["FIXED_PRICE", "AUCTION", "BEST_OFFER", "CLASSIFIED_AD"]
-
 type ConditionName = Literal[
     "NEW",
     "NEW_OTHER",
