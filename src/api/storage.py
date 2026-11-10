@@ -50,12 +50,6 @@ class SearchEndpointSavePaths(BaseModel):
     def raw_response_path(self) -> Path:
         return self.item_dir / f"{self._timestamp}_raw.json"
 
-    # Different from data path to not overwrite good data if failed
-    @computed_field
-    @property
-    def fail_path(self) -> Path:
-        return self.item_dir / f"{self._timestamp}_fail.json"
-
     @model_validator(mode="after")
     def create_dirs(self) -> Self:
 
