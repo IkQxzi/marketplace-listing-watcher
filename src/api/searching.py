@@ -17,39 +17,16 @@ from api import (
     SearchEndpointPayload,
     SearchEndpointRawResponse,
     SearchEndpointSavePaths,
-    get_sorted_listings_json,
     get_sorted_listings,
 )
 from api.auth import get_access_token
 from api.cleaning import Listing
 from config.api import SEARCH_ENDPOINT
 from config.dirs import ACTIVE_DIR, TEMP_ACTIVE_DIR
-from utils.io import generate_save_path
 from utils.misc import get_timestamp
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
-
-
-def _log_response(
-    payload: SearchEndpointPayload,
-    api_response: SearchEndpointRawResponse,
-    active_dir: Path,
-) -> None:
-    """Log API response to file."""
-
-    item_dir = generate_save_path(
-        active_dir,
-        api_response.search_value,
-        is_active=True,
-        cat_id=api_response.inferred_cat_id,
-        cat_name=api_response.inferred_cat_name,
-    )
-
-    json_path = item_dir / f"{hash(payload)!s}.json"
-
-    with json_path.open(mode="w") as f:
-        json.dump(api_response._raw_json, f)
 
 
 class ListingSearcher:
