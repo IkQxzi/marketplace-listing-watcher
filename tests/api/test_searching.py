@@ -1,9 +1,15 @@
+import json
 import logging
+from datetime import UTC, datetime, timedelta
 from time import sleep
 
 import pytest
 
-from api import ListingSearcher, SearchEndpointPayload
+from api import DatetimeRange, ListingSearcher, SearchEndpointPayload
+from api.cleaning import (
+    _get_listing_creation_datetime,
+    _sort_listings,
+)
 from tests.data.api.payloads import EXAMPLE_EXCL_KWORDS_PAYLOAD_PARAMS
 
 logger = logging.getLogger(__name__)
@@ -18,10 +24,6 @@ def test_searcher_raises_no_errors(
 ):
     payload, searcher, save_paths = form_payload_searcher_save_paths(depth)
 
-    for path in save_paths.item_dir.iterdir():
-        path.unlink(missing_ok=True)
-    save_paths.item_dir.rmdir()
-
     logging.debug(f"Listing searcher test data path: {save_paths.data_path}")
 
     access_token = load_access_token()
@@ -34,14 +36,12 @@ def test_excl_kwords(load_access_token, form_payload):
 
     excl_kwords_payload = SearchEndpointPayload(**EXAMPLE_EXCL_KWORDS_PAYLOAD_PARAMS)
     excl_kwords_searcher = ListingSearcher(excl_kwords_payload)
-    excl_kwords_response = excl_kwords_searcher._get_listings_after(
-        access_token, latest_timestamp=None
-    )
+    excl_kwords_response = excl_kwords_searcher.get_latest_listings(access_token)
 
     excl_kwords = EXAMPLE_EXCL_KWORDS_PAYLOAD_PARAMS["q"].pop("excl_kwords")
     reg_payload = SearchEndpointPayload(**EXAMPLE_EXCL_KWORDS_PAYLOAD_PARAMS)
     reg_searcher = ListingSearcher(reg_payload)
-    reg_response = reg_searcher._get_listings_after(access_token, latest_timestamp=None)
+    reg_response = reg_searcher.get_latest_listings(access_token)
 
     reg_listing_titles = [
         listing["title"] for listing in reg_response._raw_json["itemSummaries"]
@@ -66,3 +66,60 @@ def test_excl_kwords(load_access_token, form_payload):
     ):
         sleep(1)  # For timestamp offset
         raise ValueError("excl. kword found in listing titles.")
+
+
+def test_hash_does_not_change_after_searching(
+    load_access_token, form_payload_searcher_save_paths
+):
+    access_token = load_access_token()
+    payload, searcher, save_paths = form_payload_searcher_save_paths()
+
+    before_hash = hash(payload)
+    resp = searcher.get_latest_listings(access_token)
+    after_hash = hash(searcher.payload)
+
+    assert before_hash == after_hash
+
+
+def test_payload_start_date_respected(load_access_token, get_params, tmp_path):
+    access_token = load_access_token()
+    start_date_lower = datetime.now(tz=UTC) - timedelta(days=30)
+    params = get_params("simple")
+    params["filter"] = params.get("filter", {}) | {
+        "item_start_date": DatetimeRange(lower_bd=start_date_lower)
+    }
+    payload = SearchEndpointPayload(**params)
+    searcher = ListingSearcher(payload, tmp_path)
+
+    resp = searcher.get_latest_listings(access_token)
+
+    sorted_listings = _sort_listings(resp)
+
+    for listing in sorted_listings:
+        assert _get_listing_creation_datetime(listing) >= start_date_lower
+
+
+@pytest.mark.skip
+def test_only_new_listings_retrieved(
+    load_access_token, form_payload_searcher_save_paths
+):
+
+    access_token = load_access_token()
+    payload, searcher, save_paths = form_payload_searcher_save_paths()
+
+    resp = searcher.get_latest_listings(access_token)
+    listing_dicts: list[dict] = json.load(
+        save_paths.data_path.open(mode="r", encoding="utf-8")
+    )
+
+    # slice list from some index like 25% thru
+    # get the timestamp there
+    # overwrite file with slice
+    # modify metadata
+    # search again -> assert that the listings in response are not in the file already
+
+    # general plan:
+    # from clean files: get latest listings
+    # delete some
+    # use deleted timestamp to update the metadata to an older time
+    # search again -> assert that the listings in response are not in the file already

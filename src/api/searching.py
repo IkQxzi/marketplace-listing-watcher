@@ -42,7 +42,9 @@ class ListingSearcher:
             raise NotImplementedError
 
         self.payload = payload
-        self.active_listing_dir = active_listing_dir
+        self.save_paths = SearchEndpointSavePaths(
+            payload_hash=hash(payload), base_dir=active_listing_dir
+        )
 
     def get_latest_listings(
         self,
@@ -55,26 +57,31 @@ class ListingSearcher:
         Write and return the raw response from API.
         """
 
-        if self.payload.filter.item_start_date or self.payload.filter.item_end_date:
-            # TODO: if user hash is ahead of latest timestamp, use that
-            raise NotImplementedError(
-                "Support for item start/end date ranges not yet implemented."
-            )
-
-        # TODO: change test path
-        save_paths = SearchEndpointSavePaths(
-            payload_hash=hash(self.payload), base_dir=self.active_listing_dir
-        )
-
         latest_timestamp = None
-        if save_paths.data_path.exists():
-            logging.debug(f"Existing data found at {save_paths.data_path}")
-            (f"Existing data found at {save_paths.data_path}")
-            latest_timestamp = self._get_latest_timestamp(save_paths.data_path)
+        if self.payload.filter.item_start_date:
+            if self.payload.filter.item_start_date.upper_bd:
+                raise NotImplementedError(
+                    "Support for item start date ranges (specifically upper bd.) not yet implemented."
+                )
+
+            logging.warning(
+                "Taking lower bd. of item start date for filter. Cannot handle upper bd."
+            )
+            latest_timestamp = self.payload.filter.item_start_date.lower_bd
+            # TODO: if user hash is ahead of latest timestamp, use that
+
+        if self.save_paths.data_path.exists():
+            logging.debug(f"Existing data found at {self.save_paths.data_path}")
+            (f"Existing data found at {self.save_paths.data_path}")
+            if latest_timestamp:
+                latest_timestamp = max(
+                    self._get_latest_timestamp(self.save_paths.data_path),
+                    latest_timestamp,
+                )
 
         resp = self._get_listings_after(access_token, latest_timestamp)
 
-        self._write_to_save_paths(save_paths, resp)
+        self._write_to_save_paths(self.save_paths, resp)
 
         return resp
 
@@ -150,33 +157,29 @@ class ListingSearcher:
         """Write the payload config, the data from response, metadata, the raw response to files."""
 
         with paths.raw_response_path.open(mode="a") as f:
-            logging.debug(f"Writing raw response to {paths.raw_response_path}...")
+            logging.debug(f"Writing raw response to {paths.raw_response_path}")
             json.dump(resp._raw_json, f, indent=2)
 
         # Data is already sorted newest first
         try:
             with paths.data_path.open(mode="a") as f:
-                logging.debug(f"Writing data to {paths.data_path}...")
+                logging.debug(f"Writing data to {paths.data_path}")
                 json.dump(get_sorted_listings(resp), f, indent=2)
 
         except ValidationError as e:
-            e.add_note(f"Validation errors. Wrote raw output to {paths.fail_path}")
-
-            with paths.fail_path.open(mode="w") as f:
-                json.dump(resp.metadata, f, indent=2)
-                json.dump(self.payload.model_dump(), f, indent=2)
-                json.dump(resp.item_summaries, f, indent=2)
-
+            e.add_note(
+                f"Validation errors. Wrote raw output to {paths.raw_response_path}"
+            )
             raise
 
         with paths.metadata_path.open(mode="w") as f:
-            logging.debug(f"Writing metadata to {paths.metadata_path}...")
+            logging.debug(f"Writing metadata to {paths.metadata_path}")
 
             json.dump(asdict(resp.metadata), f, indent=2)
 
         if not paths.config_path.exists():
             with paths.config_path.open(mode="w") as f:
-                logging.debug(f"Writing config to {paths.config_path}...")
+                logging.debug(f"Writing config to {paths.config_path}")
                 json.dump(self.payload.model_dump(), f, indent=2)
 
         return
@@ -188,7 +191,7 @@ class ListingSearcher:
             latest_listing_json = json.load(f)[0]
 
             # Should ensure datetime on its own
-            latest_timestamp = Listing.model_validate_json(
+            latest_timestamp = Listing.model_validate(
                 latest_listing_json
             ).item_creation_date
 

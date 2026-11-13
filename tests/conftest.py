@@ -19,20 +19,21 @@ Depth = Literal["simple", "complex"]
 
 @pytest.fixture
 def get_params() -> Callable[..., dict]:
-    def _resolve_params(depth: Depth = "complex", **overrides):
+    def _resolve_params(depth: Depth = "complex"):
         if depth == "simple":
-            return {**copy.deepcopy(SIMPLE_EXAMPLE_PAYLOAD_PARAMS), **overrides}
+            return copy.deepcopy(SIMPLE_EXAMPLE_PAYLOAD_PARAMS)
         elif depth == "complex":
-            return {**copy.deepcopy(COMPLEX_EXAMPLE_PAYLOAD_PARAMS), **overrides}
-        raise ValueError(f"Unexpected depth: {depth}")
+            return copy.deepcopy(COMPLEX_EXAMPLE_PAYLOAD_PARAMS)
+        else:
+            raise ValueError(f"Unexpected depth: {depth}")
 
     return _resolve_params
 
 
 @pytest.fixture
 def form_payload(get_params) -> Callable[..., SearchEndpointPayload]:
-    def _resolve_payload(depth: Depth = "complex", **overrides):
-        return SearchEndpointPayload(**get_params(depth, **overrides))
+    def _resolve_payload(depth: Depth = "complex"):
+        return SearchEndpointPayload(**get_params(depth))
 
     return _resolve_payload
 
@@ -44,9 +45,9 @@ def form_payload_searcher_save_paths(
     ..., tuple[SearchEndpointPayload, ListingSearcher, SearchEndpointSavePaths]
 ]:
 
-    def _resolve_payload_searcher_save_paths(depth: Depth = "complex", **overrides):
+    def _resolve_payload_searcher_save_paths(depth: Depth = "complex"):
 
-        payload = form_payload(depth, **overrides)
+        payload = form_payload(depth)
         searcher = ListingSearcher(payload, tmp_path)
         save_paths = searcher.save_paths
         return payload, searcher, save_paths
