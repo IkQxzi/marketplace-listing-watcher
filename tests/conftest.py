@@ -9,7 +9,6 @@ import pytest
 from api import ListingSearcher, SearchEndpointPayload, SearchEndpointSavePaths
 from api.auth import get_access_token
 from config.api import APP_ID, CERT_ID, REFRESH_TOKEN
-from config.dirs import TEMP_ACTIVE_DIR
 from tests.data.api.payloads import (
     COMPLEX_EXAMPLE_PAYLOAD_PARAMS,
     SIMPLE_EXAMPLE_PAYLOAD_PARAMS,
@@ -40,7 +39,7 @@ def form_payload(get_params) -> Callable[..., SearchEndpointPayload]:
 
 @pytest.fixture
 def form_payload_searcher_save_paths(
-    form_payload,
+    form_payload, tmp_path
 ) -> Callable[
     ..., tuple[SearchEndpointPayload, ListingSearcher, SearchEndpointSavePaths]
 ]:
@@ -48,10 +47,8 @@ def form_payload_searcher_save_paths(
     def _resolve_payload_searcher_save_paths(depth: Depth = "complex", **overrides):
 
         payload = form_payload(depth, **overrides)
-        searcher = ListingSearcher(payload, TEMP_ACTIVE_DIR)
-        save_paths = SearchEndpointSavePaths(
-            payload_hash=hash(payload), base_dir=TEMP_ACTIVE_DIR
-        )
+        searcher = ListingSearcher(payload, tmp_path)
+        save_paths = searcher.save_paths
         return payload, searcher, save_paths
 
     return _resolve_payload_searcher_save_paths
