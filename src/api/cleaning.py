@@ -5,6 +5,8 @@ For now, is quite minimal, only enough to run the API loop.
 
 from __future__ import annotations
 
+import json
+import logging
 from datetime import datetime
 from typing import Annotated, Literal, Self
 
@@ -15,7 +17,6 @@ from pydantic import (
     Field,
     HttpUrl,
     PlainValidator,
-    ValidationError,
     computed_field,
     field_serializer,
     field_validator,
@@ -41,7 +42,10 @@ class Listing(BaseModel):
 
     # So classes defined lower in file can be type-hinted to
     model_config = ConfigDict(
-        defer_build=True, alias_generator=to_camel, validate_by_alias=True
+        defer_build=True,
+        alias_generator=to_camel,
+        validate_by_name=True,
+        validate_by_alias=True,
     )
 
     # ---------- IDs/Name ----------
@@ -74,12 +78,13 @@ class Listing(BaseModel):
     web_url: Annotated[HttpUrl, Field(validation_alias=AliasPath("itemWebUrl"))]
 
     # ---------- Shipping ----------
+    pickup_options: list[dict] | None = None  # Must be specified if no pickup option
     shipping_price: Annotated[
-        Price,
+        float | None,
         Field(
             validation_alias=AliasPath("shippingOptions", 0, "shippingCost", "value")
         ),
-    ]  # TODO alias: shipping_cost
+    ] = None  # TODO alias: shipping_cost
 
     # ---------- Location ----------
     postcode: Annotated[
@@ -96,17 +101,28 @@ class Listing(BaseModel):
     priority_listing: bool
 
     @model_validator(mode="after")
+    def ensure_shipping_or_pickup(self) -> Self:
+        """Ensure there is a shipping price, or a pickup option"""
+        if self.shipping_price is None and not self.pickup_options:
+            raise ValueError("Neither shipping price nor pickup options found.")
+        return self
+
+    @model_validator(mode="after")
     def ensure_price(self) -> Self:
+        """Ensure either bid price or fixed price are present."""
 
         if not (self.price or self.bid_price):
-            raise ValidationError("Both price and bid price not present!")
+            raise ValueError("Both price and bid price not present!")
 
         return self
 
     @computed_field
     @property
     def total_price(self) -> Price:
-        return (self.price or self.bid_price) + self.shipping_price
+        total = self.price if self.price else self.bid_price
+        if self.shipping_price:
+            total += self.shipping_price
+        return total
 
     @field_validator("item_creation_date", "item_origin_date", mode="before")
     @classmethod
@@ -125,7 +141,9 @@ class Listing(BaseModel):
 
 
 class Seller(BaseModel):
-    model_config = ConfigDict(alias_generator=to_camel, validate_by_alias=True)
+    model_config = ConfigDict(
+        alias_generator=to_camel, validate_by_alias=True, validate_by_name=True
+    )
 
     username: str
     feedback_percentage: Percentage
