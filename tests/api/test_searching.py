@@ -1,3 +1,5 @@
+from api.listings import Listing
+from api.storage import get_listings_from_path, write_listings_to_data_path
 import json
 import logging
 from datetime import UTC, datetime, timedelta
@@ -6,9 +8,8 @@ from time import sleep
 import pytest
 
 from api import DatetimeRange, ListingSearcher, SearchEndpointPayload
-from api.cleaning import (
-    _get_listing_creation_datetime,
-    _sort_listings,
+from api.listings import (
+    sort_listings,
 )
 from tests.data.api.payloads import EXAMPLE_EXCL_KWORDS_PAYLOAD_PARAMS
 
@@ -27,25 +28,23 @@ def test_searcher_raises_no_errors(
     logging.debug(f"Listing searcher test data path: {save_paths.data_path}")
 
     access_token = load_access_token()
-    resp = searcher.get_latest_listings(access_token)
+    searcher.get_latest_listings(access_token)
 
 
 @pytest.mark.api
-def test_excl_kwords(load_access_token, form_payload):
+def test_excl_kwords(load_access_token, tmp_path):
     access_token = load_access_token()
 
     excl_kwords_payload = SearchEndpointPayload(**EXAMPLE_EXCL_KWORDS_PAYLOAD_PARAMS)
-    excl_kwords_searcher = ListingSearcher(excl_kwords_payload)
-    excl_kwords_response = excl_kwords_searcher.get_latest_listings(access_token)
+    excl_kwords_searcher = ListingSearcher(excl_kwords_payload, tmp_path)
+    excl_kwords_listings = excl_kwords_searcher.get_latest_listings(access_token)
 
     excl_kwords = EXAMPLE_EXCL_KWORDS_PAYLOAD_PARAMS["q"].pop("excl_kwords")
     reg_payload = SearchEndpointPayload(**EXAMPLE_EXCL_KWORDS_PAYLOAD_PARAMS)
-    reg_searcher = ListingSearcher(reg_payload)
-    reg_response = reg_searcher.get_latest_listings(access_token)
+    reg_searcher = ListingSearcher(reg_payload, tmp_path)
+    reg_listings = reg_searcher.get_latest_listings(access_token)
 
-    reg_listing_titles = [
-        listing["title"] for listing in reg_response._raw_json["itemSummaries"]
-    ]
+    reg_listing_titles = [listing.title for listing in reg_listings]
 
     # eBay is case-insensitive
     # eBay only checks if whole word is found (hence space)
@@ -56,15 +55,12 @@ def test_excl_kwords(load_access_token, form_payload):
             "excl. kwords are not found in regular search, test is ambiguous."
         )
 
-    excl_kwords_listing_titles = [
-        listing["title"] for listing in excl_kwords_response._raw_json["itemSummaries"]
-    ]
+    excl_kwords_listing_titles = [listing.title for listing in excl_kwords_listings]
 
     if any(
         f"{kword} " in " ".join(excl_kwords_listing_titles).lower()
         for kword in excl_kwords
     ):
-        sleep(1)  # For timestamp offset
         raise ValueError("excl. kword found in listing titles.")
 
 

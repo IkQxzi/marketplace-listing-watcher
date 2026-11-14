@@ -1,12 +1,11 @@
 """
-Cleaning raw API response into clean listing objects.
+Handling listings from Browse API and related functions.
+e.g. cleaning raw API response into clean listing objects.
 For now, is quite minimal, only enough to run the API loop.
 """
 
 from __future__ import annotations
 
-import json
-import logging
 from datetime import datetime
 from typing import Annotated, Literal, Self
 
@@ -26,7 +25,6 @@ from pydantic.alias_generators import to_camel
 
 from api import (
     ConditionName,
-    SearchEndpointRawResponse,
 )
 from core.types import CountryCode, Currency, Percentage, Price, buyingOption
 
@@ -137,8 +135,6 @@ class Listing(BaseModel):
     def convert_http_url_to_str(self, v: HttpUrl) -> str:
         return str(v)
 
-    ...
-
 
 class Seller(BaseModel):
     model_config = ConfigDict(
@@ -162,23 +158,6 @@ class MarketingInfo(BaseModel):
     discount_percentage: Percentage
 
 
-def _get_listing_creation_datetime(listing: Listing) -> datetime:
-    return listing.item_creation_date
-
-
-def _sort_listings(response: SearchEndpointRawResponse) -> list[Listing]:
-    listings = [Listing.model_validate(item) for item in response.item_summaries]
-    listings.sort(key=_get_listing_creation_datetime, reverse=True)
+def sort_listings(listings: list[Listing]) -> list[Listing]:
+    listings.sort(key=lambda listing: listing.item_creation_date, reverse=True)
     return listings
-
-
-def get_sorted_listings_json(response: SearchEndpointRawResponse) -> list[str]:
-    """Clean the API response and return a list of json-encoded Listings, sorted newest at start of list."""
-
-    return [listing.model_dump_json() for listing in _sort_listings(response)]
-
-
-def get_sorted_listings(response: SearchEndpointRawResponse) -> list[dict]:
-    """Clean the API response and return a list of dict-encoded Listings, sorted newest at start of list."""
-
-    return [listing.model_dump() for listing in _sort_listings(response)]
