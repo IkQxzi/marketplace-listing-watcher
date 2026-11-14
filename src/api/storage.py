@@ -1,6 +1,5 @@
 """Functionality and base classes for any part of API."""
 
-import json
 import logging
 from datetime import datetime
 from pathlib import Path
@@ -36,7 +35,7 @@ class SearchEndpointSavePaths(BaseModel):
     @computed_field
     @property
     def data_path(self) -> Path:
-        return self.item_dir / "data.json"  # yh we use json now
+        return self.item_dir / "data.jsonl"  # yh we use jsonl now
 
     # Unique to each request
     @computed_field
@@ -70,18 +69,18 @@ def write_listings_to_data_path(
     Defaults to appending, set append = False to overwrite.\n
     Does not sort the listings.\n
     """
-    listing_dicts = [Listing.model_dump(listing) for listing in listings]
+    listing_jsons = [Listing.model_dump_json(listing) for listing in listings]
 
     mode = "a" if append else "w"
     with data_path.open(mode) as f:
         logging.debug(f"Writing data to {data_path}")
-        json.dump(listing_dicts, f, indent=2)
+        f.write("\n".join(listing_jsons) + "\n")
 
 
 # ---------------------------- Loading ----------------------------
 
 
-def get_listings_from_path(
+def read_listings_from_path(
     save_paths: SearchEndpointSavePaths, count: int | None = None
 ) -> list[Listing]:
     """Load a number of listings from save path. Loads top down."""
@@ -89,19 +88,23 @@ def get_listings_from_path(
     with save_paths.data_path.open(mode="r", encoding="utf-8") as f:
         if count:
             return [
-                Listing.model_validate(listing) for listing in json.load(f)[: count - 1]
+                Listing.model_validate_json(listing.strip())
+                for listing in f.readlines(count)
             ]
-        return list(Listing.model_validate(listing) for listing in json.load(f))
+
+        return [
+            Listing.model_validate_json(listing.strip()) for listing in f.readlines()
+        ]
 
 
-def get_latest_listing_timestamp(data_path: Path) -> datetime:
+def read_latest_listing_timestamp(data_path: Path) -> datetime:
     """
     Gets latest timestamp from newest listing at data path.\n
     Assumes it is at the top of the file (so newest first).
     """
 
     with data_path.open(mode="r", encoding="utf-8") as f:
-        latest_listing_json = json.load(f)[0]
+        latest_listing_json = f.readline().strip()
 
         # Should ensure datetime on its own
         latest_timestamp = Listing.model_validate(

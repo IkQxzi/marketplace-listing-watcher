@@ -7,7 +7,7 @@ from api import DatetimeRange, ListingSearcher, SearchEndpointPayload
 from api.listings import (
     sort_listings,
 )
-from api.storage import get_listings_from_path, write_listings_to_data_path
+from api.storage import read_listings_from_path, write_listings_to_data_path
 from tests.data.api.payloads import EXAMPLE_EXCL_KWORDS_PAYLOAD_PARAMS
 
 logger = logging.getLogger(__name__)

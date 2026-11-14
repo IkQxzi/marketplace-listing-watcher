@@ -11,7 +11,7 @@ from api.schemas import ResponseMetadata, SearchEndpointResponse
 from api.searching import ListingSearcher
 from api.storage import (
     SearchEndpointSavePaths,
-    get_latest_listing_timestamp,
-    get_listings_from_path,
+    read_latest_listing_timestamp,
+    read_listings_from_path,
     write_listings_to_data_path,
 )

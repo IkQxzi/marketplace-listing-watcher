@@ -18,7 +18,7 @@ from api.params import (
 from api.schemas import ResponseMetadata, SearchEndpointResponse
 from api.storage import (
     SearchEndpointSavePaths,
-    get_latest_listing_timestamp,
+    read_latest_listing_timestamp,
     write_listings_to_data_path,
 )
 from config.api import SEARCH_ENDPOINT
@@ -75,7 +75,7 @@ class ListingSearcher:
             (f"Existing data found at {self.save_paths.data_path}")
             if latest_timestamp:
                 latest_timestamp = max(
-                    get_latest_listing_timestamp(self.save_paths.data_path),
+                    read_latest_listing_timestamp(self.save_paths.data_path),
                     latest_timestamp,
                 )
 
