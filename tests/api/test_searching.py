@@ -1,9 +1,5 @@
-from api.listings import Listing
-from api.storage import get_listings_from_path, write_listings_to_data_path
-import json
 import logging
 from datetime import UTC, datetime, timedelta
-from time import sleep
 
 import pytest
 
@@ -11,6 +7,7 @@ from api import DatetimeRange, ListingSearcher, SearchEndpointPayload
 from api.listings import (
     sort_listings,
 )
+from api.storage import get_listings_from_path, write_listings_to_data_path
 from tests.data.api.payloads import EXAMPLE_EXCL_KWORDS_PAYLOAD_PARAMS
 
 logger = logging.getLogger(__name__)
@@ -89,23 +86,40 @@ def test_payload_start_date_respected(load_access_token, get_params, tmp_path):
 
     resp = searcher.get_latest_listings(access_token)
 
-    sorted_listings = _sort_listings(resp)
+    sorted_listings = sort_listings(resp)
 
     for listing in sorted_listings:
-        assert _get_listing_creation_datetime(listing) >= start_date_lower
+        assert listing.item_creation_date >= start_date_lower
 
 
-@pytest.mark.skip
+@pytest.mark.parametrize("depth", ["simple", "complex"])
 def test_only_new_listings_retrieved(
-    load_access_token, form_payload_searcher_save_paths
+    load_access_token, form_payload_searcher_save_paths, depth
 ):
 
     access_token = load_access_token()
-    payload, searcher, save_paths = form_payload_searcher_save_paths()
+    payload, searcher, save_paths = form_payload_searcher_save_paths(depth)
 
-    resp = searcher.get_latest_listings(access_token)
-    listing_dicts: list[dict] = json.load(
-        save_paths.data_path.open(mode="r", encoding="utf-8")
+    searcher.get_latest_listings(access_token)
+    listings = get_listings_from_path(save_paths)  # Newest first
+
+    # Take out newest 25% of listings
+    # Note that top listing will not be in new set of listings
+    top_ind = len(listings) // 4
+    newest_listing_timestamp = listings[top_ind - 1].item_creation_date
+    write_listings_to_data_path(listings[:top_ind], save_paths.data_path)
+
+    searcher.get_latest_listings(access_token)
+    new_listings = get_listings_from_path(save_paths)
+
+    # Check that our newest was not overwritten, or our first
+    assert new_listings[top_ind - 1].item_creation_date == newest_listing_timestamp
+    assert new_listings[0].item_creation_date == listings[0].item_creation_date
+
+    # Check that all listings past our newest are newer
+    assert all(
+        listing.item_creation_date >= newest_listing_timestamp
+        for listing in new_listings
     )
 
     # slice list from some index like 25% thru
