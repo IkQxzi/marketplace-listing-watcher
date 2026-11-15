@@ -61,6 +61,7 @@ def test_excl_kwords(load_access_token, tmp_path):
         raise ValueError("excl. kword found in listing titles.")
 
 
+@pytest.mark.api
 def test_hash_does_not_change_after_searching(
     load_access_token, form_payload_searcher_save_paths
 ):
@@ -74,6 +75,7 @@ def test_hash_does_not_change_after_searching(
     assert before_hash == after_hash
 
 
+@pytest.mark.api
 def test_payload_start_date_respected(load_access_token, get_params, tmp_path):
     access_token = load_access_token()
     start_date_lower = datetime.now(tz=UTC) - timedelta(days=30)
