@@ -84,52 +84,64 @@ def test_payload_start_date_respected(load_access_token, get_params, tmp_path):
     payload = SearchEndpointPayload(**params)
     searcher = ListingSearcher(payload, tmp_path)
 
-    resp = searcher.get_latest_listings(access_token)
+    listings = searcher.get_latest_listings(access_token)
 
-    sorted_listings = sort_listings(resp)
-
-    for listing in sorted_listings:
+    for listing in listings:
         assert listing.item_creation_date >= start_date_lower
 
 
 @pytest.mark.parametrize("depth", ["simple", "complex"])
+@pytest.mark.api
 def test_only_new_listings_retrieved(
     load_access_token, form_payload_searcher_save_paths, depth
 ):
 
     access_token = load_access_token()
     payload, searcher, save_paths = form_payload_searcher_save_paths(depth)
+    payload.limit = 50
 
-    searcher.get_latest_listings(access_token)
-    listings = get_listings_from_path(save_paths)  # Newest first
+    listings = searcher.get_latest_listings(access_token)  # Oldest first
 
-    # Take out newest 25% of listings
-    # Note that top listing will not be in new set of listings
-    top_ind = len(listings) // 4
-    newest_listing_timestamp = listings[top_ind - 1].item_creation_date
-    write_listings_to_data_path(listings[:top_ind], save_paths.data_path)
+    # Index of the 75th percentile listing
+    # So only 25% of listings are newer
+    reference_listing_ind = 3 * (len(listings) // 4)
+    reference_listing_timestamp = listings[reference_listing_ind].item_creation_date
 
-    searcher.get_latest_listings(access_token)
-    new_listings = get_listings_from_path(save_paths)
-
-    # Check that our newest was not overwritten, or our first
-    assert new_listings[top_ind - 1].item_creation_date == newest_listing_timestamp
-    assert new_listings[0].item_creation_date == listings[0].item_creation_date
-
-    # Check that all listings past our newest are newer
-    assert all(
-        listing.item_creation_date >= newest_listing_timestamp
-        for listing in new_listings
+    # Overwrite listings so newest 25% of listings are missing
+    # Retain reference listing in file
+    write_listings_to_data_path(
+        listings[: reference_listing_ind + 1], save_paths.data_path, append=False
     )
 
-    # slice list from some index like 25% thru
-    # get the timestamp there
-    # overwrite file with slice
-    # modify metadata
-    # search again -> assert that the listings in response are not in the file already
+    new_listings = searcher.get_latest_listings(access_token)
 
-    # general plan:
-    # from clean files: get latest listings
-    # delete some
-    # use deleted timestamp to update the metadata to an older time
-    # search again -> assert that the listings in response are not in the file already
+    # Should be ONLY new listings (hence strict)
+    are_listings_new = [
+        listing.item_creation_date > reference_listing_timestamp
+        for listing in new_listings
+    ]
+
+    if (
+        are_listings_new.count(True) == 1
+        and new_listings[are_listings_new.index(True)].item_creation_date
+        == reference_listing_timestamp
+    ):
+        raise ValueError("Reference listing in new listings.")
+
+    assert all(are_listings_new), "Stale listings in 'new listings'"
+
+    written_listings = read_listings_from_path(save_paths.data_path)
+
+    # Older listings should not be affected
+    assert written_listings[0].item_creation_date == listings[0].item_creation_date, (
+        "Oldest listing was overwritten!"
+    )
+
+    # Listings written to file must also be in oldest-first order
+    # Note non-strict because sellers may list multiple items simultaneously
+    written_listings_sorted = [
+        written_listings[i].item_creation_date
+        <= written_listings[i + 1].item_creation_date
+        for i in range(len(written_listings) - 1)
+    ]
+    assert all(written_listings_sorted)

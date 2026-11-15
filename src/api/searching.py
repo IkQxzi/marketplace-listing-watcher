@@ -45,6 +45,7 @@ class ListingSearcher:
         self.save_paths = SearchEndpointSavePaths(
             payload_hash=hash(payload), base_dir=active_listing_dir
         )
+        self.latest_timestamp: datetime | None = None
 
     def get_latest_listings(
         self,
@@ -54,10 +55,13 @@ class ListingSearcher:
         """
         Query Search Endpoint for listings after a timestamp.\n
         Timestamp is the newer of the last listing timestamp and the payload filter timestamp.\n
-        Write API responses and return list of Listing objects.
+        Note that if there is a timestamp, the limit parameter of the payload will be ignored,
+        because the API pads out the response with listings that do not respect the timestamp restriction.\n
+        Write API responses and return list of Listing objects, sorted oldest first.\n
         """
 
-        latest_timestamp = None
+        latest_timestamp_opts = []
+
         if self.payload.filter.item_start_date:
             if self.payload.filter.item_start_date.upper_bd:
                 raise NotImplementedError(
@@ -67,39 +71,46 @@ class ListingSearcher:
             logging.warning(
                 "Taking lower bd. of item start date for filter. Cannot handle upper bd."
             )
-            latest_timestamp = self.payload.filter.item_start_date.lower_bd
+            if self.payload.filter.item_start_date.lower_bd:
+                latest_timestamp_opts.append(
+                    self.payload.filter.item_start_date.lower_bd
+                )
             # TODO: if user hash is ahead of latest timestamp, use that
 
         if self.save_paths.data_path.exists():
             logging.debug(f"Existing data found at {self.save_paths.data_path}")
             (f"Existing data found at {self.save_paths.data_path}")
-            if latest_timestamp:
-                latest_timestamp = max(
-                    read_latest_listing_timestamp(self.save_paths.data_path),
-                    latest_timestamp,
-                )
+            latest_timestamp_opts.append(
+                read_latest_listing_timestamp(self.save_paths.data_path)
+            )
 
-        resp = self._get_response_after_timestamp(access_token, latest_timestamp)
+        self.latest_timestamp = (
+            max(latest_timestamp_opts) if latest_timestamp_opts else None
+        )
 
-        sorted_listings = self.write_response_to_save_paths(self.save_paths, resp)
+        resp = self._get_response_after_timestamp(access_token)
+        sorted_listings = self.clean_listings(resp)
+        self.write_response_to_save_paths(self.save_paths, resp, sorted_listings)
 
         return sorted_listings
 
     def _get_response_after_timestamp(
         self,
         access_token: str,
-        latest_timestamp: datetime | None,
         ignore_warnings: bool = False,
     ) -> SearchEndpointResponse:
         """
-        Get all the listings after the latest timestamp specified.
+        Get all the listings after the latest timestamp from self attribute.\n
         """
 
         # May not work, may require frozen for hashing
         # Should use user-specified if it is newer than the latest timestamp
-        if latest_timestamp:
+        if self.latest_timestamp:
             self.payload.filter.item_start_date = DatetimeRange(
-                lower_bd=latest_timestamp
+                lower_bd=self.latest_timestamp
+            )
+            logging.debug(
+                f"Requesting listings after timestamp: {self.latest_timestamp.isoformat()}"
             )
 
         headers = {
@@ -183,24 +194,40 @@ class ListingSearcher:
                 f"search_value: {search_value}\n json: {json.dumps(json_response, indent=4)}"
             )
 
+    def clean_listings(self, resp: SearchEndpointResponse) -> list[Listing]:
+        """Clean listings from response and return them."""
+
+        listings = [Listing.model_validate(listing) for listing in resp.item_summaries]
+
+        # Have to manually filter because API always pads out payload limit
+        # Must be strict to not retrieve any stale
+        if self.latest_timestamp:
+            listings = [
+                listing
+                for listing in listings
+                if listing.item_creation_date > self.latest_timestamp
+            ]
+        sort_listings(listings)
+
+        return listings
+
     def write_response_to_save_paths(
-        self, paths: SearchEndpointSavePaths, resp: SearchEndpointResponse
-    ) -> list[Listing]:
+        self,
+        paths: SearchEndpointSavePaths,
+        resp: SearchEndpointResponse,
+        listings: list[Listing],
+    ) -> None:
         """
-        Write the payload config, the data from response, metadata, the raw response to files.
-        Listings written to data path are sorted newest first (at top of file).
-        Returns the sorted listings.
+        Write the payload config, cleaned listings, metadata, the raw response to files.\n
+        Removes duplicate listings (which are always present from API padding out payload limit).\n
+        Listings written to data path are sorted newest first (at top of file).\n
         """
 
         with paths.raw_response_path.open(mode="a") as f:
             logging.debug(f"Writing raw response to {paths.raw_response_path}")
             json.dump(resp._raw_json, f, indent=2)
 
-        sorted_listings = sort_listings(
-            [Listing.model_validate(listing) for listing in resp.item_summaries]
-        )
-
-        write_listings_to_data_path(sorted_listings, paths.data_path)
+        write_listings_to_data_path(listings, paths.data_path)
 
         with paths.metadata_path.open(mode="w") as f:
             logging.debug(f"Writing metadata to {paths.metadata_path}")
@@ -213,4 +240,4 @@ class ListingSearcher:
                 logging.debug(f"Writing config to {paths.config_path}")
                 json.dump(self.payload.model_dump(), f, indent=2)
 
-        return sorted_listings
+        logging.info(f"Successfully wrote {len(listings)} listings to file.")

@@ -67,7 +67,7 @@ def write_listings_to_data_path(
     """
     Write listings to data path specified.\n
     Defaults to appending, set append = False to overwrite.\n
-    Does not sort the listings.\n
+    Does not sort the listings or remove duplicates.\n
     """
     listing_jsons = [Listing.model_dump_json(listing) for listing in listings]
 
@@ -80,34 +80,36 @@ def write_listings_to_data_path(
 # ---------------------------- Loading ----------------------------
 
 
-def read_listings_from_path(
-    save_paths: SearchEndpointSavePaths, count: int | None = None
-) -> list[Listing]:
-    """Load a number of listings from save path. Loads top down."""
+def read_listings_from_path(data_path: Path, count: int | None = None) -> list[Listing]:
+    """Load a number of listings from data path. Loads top down."""
 
-    with save_paths.data_path.open(mode="r", encoding="utf-8") as f:
-        if count:
-            return [
-                Listing.model_validate_json(listing.strip())
-                for listing in f.readlines(count)
-            ]
-
-        return [
+    with data_path.open(mode="r", encoding="utf-8") as f:
+        all_listings = [
             Listing.model_validate_json(listing.strip()) for listing in f.readlines()
         ]
 
+        # TODO: rewrite to actually be more efficient
+        if count:
+            return all_listings[-count:]
 
-def read_latest_listing_timestamp(data_path: Path) -> datetime:
+        return all_listings
+
+
+def read_latest_listing_timestamp(data_path: Path, oldest_first=True) -> datetime:
     """
     Gets latest timestamp from newest listing at data path.\n
-    Assumes it is at the top of the file (so newest first).
+    Defaults to oldest first.
     """
 
+    # TODO: use seek() to jump to end
     with data_path.open(mode="r", encoding="utf-8") as f:
-        latest_listing_json = f.readline().strip()
+        if oldest_first:
+            latest_listing_json = f.readlines()[-1].strip()
+        else:
+            latest_listing_json = f.readline().strip()
 
         # Should ensure datetime on its own
-        latest_timestamp = Listing.model_validate(
+        latest_timestamp = Listing.model_validate_json(
             latest_listing_json
         ).item_creation_date
         logging.debug(f"Latest timestamp requested: {latest_timestamp.isoformat()}")

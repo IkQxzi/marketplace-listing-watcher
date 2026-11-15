@@ -158,6 +158,7 @@ class MarketingInfo(BaseModel):
     discount_percentage: Percentage
 
 
-def sort_listings(listings: list[Listing]) -> list[Listing]:
-    listings.sort(key=lambda listing: listing.item_creation_date, reverse=True)
-    return listings
+def sort_listings(listings: list[Listing]) -> None:
+    """Sort a list of Listing objects in place, oldest to newest."""
+
+    listings.sort(key=lambda listing: listing.item_creation_date)
