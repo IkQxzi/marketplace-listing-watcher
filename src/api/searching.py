@@ -8,48 +8,25 @@ from datetime import datetime
 from pathlib import Path
 
 import requests
-from pydantic import ValidationError
 
 from alerts.core import Alerter
-from api import (
+from api.listings import Listing, sort_listings
+from api.params import (
     DatetimeRange,
-    ResponseMetadata,
     SearchEndpointPayload,
-    SearchEndpointRawResponse,
-    SearchEndpointSavePaths,
-    get_sorted_listings_json,
-    get_sorted_listings,
 )
-from api.auth import get_access_token
-from api.cleaning import Listing
+from api.schemas import ResponseMetadata, SearchEndpointResponse
+from api.storage import (
+    SearchEndpointSavePaths,
+    read_latest_listing_timestamp,
+    write_listings_to_data_path,
+)
 from config.api import SEARCH_ENDPOINT
-from config.dirs import ACTIVE_DIR, TEMP_ACTIVE_DIR
-from utils.io import generate_save_path
+from config.dirs import ACTIVE_DIR
 from utils.misc import get_timestamp
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
-
-
-def _log_response(
-    payload: SearchEndpointPayload,
-    api_response: SearchEndpointRawResponse,
-    active_dir: Path,
-) -> None:
-    """Log API response to file."""
-
-    item_dir = generate_save_path(
-        active_dir,
-        api_response.search_value,
-        is_active=True,
-        cat_id=api_response.inferred_cat_id,
-        cat_name=api_response.inferred_cat_name,
-    )
-
-    json_path = item_dir / f"{hash(payload)!s}.json"
-
-    with json_path.open(mode="w") as f:
-        json.dump(api_response._raw_json, f)
 
 
 class ListingSearcher:
@@ -65,57 +42,75 @@ class ListingSearcher:
             raise NotImplementedError
 
         self.payload = payload
-        self.active_listing_dir = active_listing_dir
+        self.save_paths = SearchEndpointSavePaths(
+            payload_hash=hash(payload), base_dir=active_listing_dir
+        )
+        self.latest_timestamp: datetime | None = None
 
     def get_latest_listings(
         self,
         access_token: str,
         ignore_warnings: bool = False,
-    ) -> SearchEndpointRawResponse:
+    ) -> list[Listing]:
         """
-        Read timestamp of latest listings from one of the files specified in `core.py`\n
-        Query Search Endpoint for listings after timestamp.\n
-        Write and return the raw response from API.
+        Query Search Endpoint for listings after a timestamp.\n
+        Timestamp is the newer of the last listing timestamp and the payload filter timestamp.\n
+        Note that if there is a timestamp, the limit parameter of the payload will be ignored,
+        because the API pads out the response with listings that do not respect the timestamp restriction.\n
+        Write API responses and return list of Listing objects, sorted oldest first.\n
         """
 
-        if self.payload.filter.item_start_date or self.payload.filter.item_end_date:
+        latest_timestamp_opts = []
+
+        if self.payload.filter.item_start_date:
+            if self.payload.filter.item_start_date.upper_bd:
+                raise NotImplementedError(
+                    "Support for item start date ranges (specifically upper bd.) not yet implemented."
+                )
+
+            logging.warning(
+                "Taking lower bd. of item start date for filter. Cannot handle upper bd."
+            )
+            if self.payload.filter.item_start_date.lower_bd:
+                latest_timestamp_opts.append(
+                    self.payload.filter.item_start_date.lower_bd
+                )
             # TODO: if user hash is ahead of latest timestamp, use that
-            raise NotImplementedError(
-                "Support for item start/end date ranges not yet implemented."
+
+        if self.save_paths.data_path.exists():
+            logging.debug(f"Existing data found at {self.save_paths.data_path}")
+            (f"Existing data found at {self.save_paths.data_path}")
+            latest_timestamp_opts.append(
+                read_latest_listing_timestamp(self.save_paths.data_path)
             )
 
-        # TODO: change test path
-        save_paths = SearchEndpointSavePaths(
-            payload_hash=hash(self.payload), base_dir=self.active_listing_dir
+        self.latest_timestamp = (
+            max(latest_timestamp_opts) if latest_timestamp_opts else None
         )
 
-        latest_timestamp = None
-        if save_paths.data_path.exists():
-            logging.debug(f"Existing data found at {save_paths.data_path}")
-            (f"Existing data found at {save_paths.data_path}")
-            latest_timestamp = self._get_latest_timestamp(save_paths.data_path)
+        resp = self._get_response_after_timestamp(access_token)
+        sorted_listings = self.clean_listings(resp)
+        self.write_response_to_save_paths(self.save_paths, resp, sorted_listings)
 
-        resp = self._get_listings_after(access_token, latest_timestamp)
+        return sorted_listings
 
-        self._write_to_save_paths(save_paths, resp)
-
-        return resp
-
-    def _get_listings_after(
+    def _get_response_after_timestamp(
         self,
         access_token: str,
-        latest_timestamp: datetime | None,
         ignore_warnings: bool = False,
-    ) -> SearchEndpointRawResponse:
+    ) -> SearchEndpointResponse:
         """
-        Get all the listings after the latest timestamp specified.
+        Get all the listings after the latest timestamp from self attribute.\n
         """
 
         # May not work, may require frozen for hashing
         # Should use user-specified if it is newer than the latest timestamp
-        if latest_timestamp:
+        if self.latest_timestamp:
             self.payload.filter.item_start_date = DatetimeRange(
-                lower_bd=latest_timestamp
+                lower_bd=self.latest_timestamp
+            )
+            logging.debug(
+                f"Requesting listings after timestamp: {self.latest_timestamp.isoformat()}"
             )
 
         headers = {
@@ -150,13 +145,15 @@ class ListingSearcher:
 
         item_summaries = r_json["itemSummaries"]
 
-        cat_counts, cat_mappings = self._parse_categories(item_summaries)
+        cat_counts, cat_mappings = self._get_category_counts_and_mappings(
+            item_summaries
+        )
 
         # Infer category ID and name from most common
         cat_id = int(cat_counts.most_common(1)[0][0])
         cat_name = cat_mappings[cat_id]
 
-        response = SearchEndpointRawResponse(
+        response = SearchEndpointResponse(
             metadata=metadata,
             item_summaries=item_summaries,
             search_value=self.payload.search_value,
@@ -167,57 +164,7 @@ class ListingSearcher:
 
         return response
 
-    def _write_to_save_paths(
-        self, paths: SearchEndpointSavePaths, resp: SearchEndpointRawResponse
-    ) -> None:
-        """Write the payload config, the data from response, metadata, the raw response to files."""
-
-        with paths.raw_response_path.open(mode="a") as f:
-            logging.debug(f"Writing raw response to {paths.raw_response_path}...")
-            json.dump(resp._raw_json, f, indent=2)
-
-        # Data is already sorted newest first
-        try:
-            with paths.data_path.open(mode="a") as f:
-                logging.debug(f"Writing data to {paths.data_path}...")
-                json.dump(get_sorted_listings(resp), f, indent=2)
-
-        except ValidationError as e:
-            e.add_note(f"Validation errors. Wrote raw output to {paths.fail_path}")
-
-            with paths.fail_path.open(mode="w") as f:
-                json.dump(resp.metadata, f, indent=2)
-                json.dump(self.payload.model_dump(), f, indent=2)
-                json.dump(resp.item_summaries, f, indent=2)
-
-            raise
-
-        with paths.metadata_path.open(mode="w") as f:
-            logging.debug(f"Writing metadata to {paths.metadata_path}...")
-
-            json.dump(asdict(resp.metadata), f, indent=2)
-
-        if not paths.config_path.exists():
-            with paths.config_path.open(mode="w") as f:
-                logging.debug(f"Writing config to {paths.config_path}...")
-                json.dump(self.payload.model_dump(), f, indent=2)
-
-        return
-
-    def _get_latest_timestamp(self, data_path: Path) -> datetime:
-        """Gets latest timestamp. Assumes it is at the top of the file (so newest first)."""
-
-        with data_path.open(mode="r", encoding="utf-8") as f:
-            latest_listing_json = json.load(f)[0]
-
-            # Should ensure datetime on its own
-            latest_timestamp = Listing.model_validate_json(
-                latest_listing_json
-            ).item_creation_date
-
-        return latest_timestamp
-
-    def _parse_categories(
+    def _get_category_counts_and_mappings(
         self, item_summaries: list[dict]
     ) -> tuple[Counter[str], defaultdict[int, str]]:
         """Parse categories of items,
@@ -228,15 +175,11 @@ class ListingSearcher:
 
         for item in item_summaries:
             cat_info: list = item["categories"]
-            cat_info: list = item["categories"]
 
             for cat in cat_info:
                 cat_id = int(cat["categoryId"])
-                cat_id = int(cat["categoryId"])
 
                 cat_counts[cat_id] += 1
-                cat_mapping[cat_id] = cat["categoryName"]
-
                 cat_mapping[cat_id] = cat["categoryName"]
 
         return cat_counts, cat_mapping
@@ -248,29 +191,53 @@ class ListingSearcher:
 
         with log_file_path.open(mode="w") as f:
             f.write(
-                f"json: {json.dumps(json_response, indent=4)}\nsearch_value: {search_value}"
+                f"search_value: {search_value}\n json: {json.dumps(json_response, indent=4)}"
             )
 
+    def clean_listings(self, resp: SearchEndpointResponse) -> list[Listing]:
+        """Clean listings from response and return them."""
 
-# Example usage
-if __name__ == "__main__":
-    raise NotImplementedError
+        listings = [Listing.model_validate(listing) for listing in resp.item_summaries]
 
-    from alerts.discord import DiscordBot
-    from config.alerts import DISCORD_WEBHOOK_URL
-    from config.api import APP_ID, CERT_ID, REFRESH_TOKEN
-    from config.dirs import TEMP_ACTIVE_DIR
+        # Have to manually filter because API always pads out payload limit
+        # Must be strict to not retrieve any stale
+        if self.latest_timestamp:
+            listings = [
+                listing
+                for listing in listings
+                if listing.item_creation_date > self.latest_timestamp
+            ]
+        sort_listings(listings)
 
-    assert REFRESH_TOKEN and APP_ID and CERT_ID, "API credentials missing from .env"
-    assert DISCORD_WEBHOOK_URL, "Discord webhook URL missing from .env"
+        return listings
 
-    iphone_16_basic_conf = SearchAPIConfig(q="iphone 16", conditions=["NEW", "USED"])
-    iphone_16_basic_conf = SearchAPIConfig(q="iphone 16", conditions=["NEW", "USED"])
+    def write_response_to_save_paths(
+        self,
+        paths: SearchEndpointSavePaths,
+        resp: SearchEndpointResponse,
+        listings: list[Listing],
+    ) -> None:
+        """
+        Write the payload config, cleaned listings, metadata, the raw response to files.\n
+        Removes duplicate listings (which are always present from API padding out payload limit).\n
+        Listings written to data path are sorted newest first (at top of file).\n
+        """
 
-    disc_bot = DiscordBot(DISCORD_WEBHOOK_URL)
+        with paths.raw_response_path.open(mode="a") as f:
+            logging.debug(f"Writing raw response to {paths.raw_response_path}")
+            json.dump(resp._raw_json, f, indent=2)
 
-    access_token = get_access_token(REFRESH_TOKEN, APP_ID, CERT_ID)
-    searcher = ListingSearcher(disc_bot)
+        write_listings_to_data_path(listings, paths.data_path)
 
-    api_resp = searcher.get_listings(access_token, iphone_16_basic_conf)
-    log_response(api_resp, TEMP_ACTIVE_DIR)
+        with paths.metadata_path.open(mode="w") as f:
+            logging.debug(f"Writing metadata to {paths.metadata_path}")
+            json.dump(asdict(resp.metadata), f, indent=2)
+
+        # Only bother writing config if config not already present
+        # Trusts hashing to enforce uniqueness
+        if not paths.config_path.exists():
+            with paths.config_path.open(mode="w") as f:
+                logging.debug(f"Writing config to {paths.config_path}")
+                json.dump(self.payload.model_dump(), f, indent=2)
+
+        logging.info(f"Successfully wrote {len(listings)} listings to file.")

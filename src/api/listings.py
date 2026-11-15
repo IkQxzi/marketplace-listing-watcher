@@ -1,5 +1,6 @@
 """
-Cleaning raw API response into clean listing objects.
+Handling listings from Browse API and related functions.
+e.g. cleaning raw API response into clean listing objects.
 For now, is quite minimal, only enough to run the API loop.
 """
 
@@ -15,7 +16,6 @@ from pydantic import (
     Field,
     HttpUrl,
     PlainValidator,
-    ValidationError,
     computed_field,
     field_serializer,
     field_validator,
@@ -25,7 +25,6 @@ from pydantic.alias_generators import to_camel
 
 from api import (
     ConditionName,
-    SearchEndpointRawResponse,
 )
 from core.types import CountryCode, Currency, Percentage, Price, buyingOption
 
@@ -41,7 +40,10 @@ class Listing(BaseModel):
 
     # So classes defined lower in file can be type-hinted to
     model_config = ConfigDict(
-        defer_build=True, alias_generator=to_camel, validate_by_alias=True
+        defer_build=True,
+        alias_generator=to_camel,
+        validate_by_name=True,
+        validate_by_alias=True,
     )
 
     # ---------- IDs/Name ----------
@@ -74,12 +76,13 @@ class Listing(BaseModel):
     web_url: Annotated[HttpUrl, Field(validation_alias=AliasPath("itemWebUrl"))]
 
     # ---------- Shipping ----------
+    pickup_options: list[dict] | None = None  # Must be specified if no pickup option
     shipping_price: Annotated[
-        Price,
+        float | None,
         Field(
             validation_alias=AliasPath("shippingOptions", 0, "shippingCost", "value")
         ),
-    ]  # TODO alias: shipping_cost
+    ] = None  # TODO alias: shipping_cost
 
     # ---------- Location ----------
     postcode: Annotated[
@@ -96,17 +99,28 @@ class Listing(BaseModel):
     priority_listing: bool
 
     @model_validator(mode="after")
+    def ensure_shipping_or_pickup(self) -> Self:
+        """Ensure there is a shipping price, or a pickup option"""
+        if self.shipping_price is None and not self.pickup_options:
+            raise ValueError("Neither shipping price nor pickup options found.")
+        return self
+
+    @model_validator(mode="after")
     def ensure_price(self) -> Self:
+        """Ensure either bid price or fixed price are present."""
 
         if not (self.price or self.bid_price):
-            raise ValidationError("Both price and bid price not present!")
+            raise ValueError("Both price and bid price not present!")
 
         return self
 
     @computed_field
     @property
     def total_price(self) -> Price:
-        return (self.price or self.bid_price) + self.shipping_price
+        total = self.price if self.price else self.bid_price
+        if self.shipping_price:
+            total += self.shipping_price
+        return total
 
     @field_validator("item_creation_date", "item_origin_date", mode="before")
     @classmethod
@@ -121,11 +135,11 @@ class Listing(BaseModel):
     def convert_http_url_to_str(self, v: HttpUrl) -> str:
         return str(v)
 
-    ...
-
 
 class Seller(BaseModel):
-    model_config = ConfigDict(alias_generator=to_camel, validate_by_alias=True)
+    model_config = ConfigDict(
+        alias_generator=to_camel, validate_by_alias=True, validate_by_name=True
+    )
 
     username: str
     feedback_percentage: Percentage
@@ -144,23 +158,7 @@ class MarketingInfo(BaseModel):
     discount_percentage: Percentage
 
 
-def _get_listing_creation_datetime(listing: Listing) -> datetime:
-    return listing.item_creation_date
+def sort_listings(listings: list[Listing]) -> None:
+    """Sort a list of Listing objects in place, oldest to newest."""
 
-
-def _sort_listings(response: SearchEndpointRawResponse) -> list[Listing]:
-    listings = [Listing.model_validate(item) for item in response.item_summaries]
-    listings.sort(key=_get_listing_creation_datetime, reverse=True)
-    return listings
-
-
-def get_sorted_listings_json(response: SearchEndpointRawResponse) -> list[str]:
-    """Clean the API response and return a list of json-encoded Listings, sorted newest at start of list."""
-
-    return [listing.model_dump_json() for listing in _sort_listings(response)]
-
-
-def get_sorted_listings(response: SearchEndpointRawResponse) -> list[dict]:
-    """Clean the API response and return a list of dict-encoded Listings, sorted newest at start of list."""
-
-    return [listing.model_dump() for listing in _sort_listings(response)]
+    listings.sort(key=lambda listing: listing.item_creation_date)

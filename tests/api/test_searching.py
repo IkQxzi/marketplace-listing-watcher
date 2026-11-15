@@ -1,9 +1,13 @@
 import logging
-from time import sleep
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from api import ListingSearcher, SearchEndpointPayload
+from api import DatetimeRange, ListingSearcher, SearchEndpointPayload
+from api.listings import (
+    sort_listings,
+)
+from api.storage import read_listings_from_path, write_listings_to_data_path
 from tests.data.api.payloads import EXAMPLE_EXCL_KWORDS_PAYLOAD_PARAMS
 
 logger = logging.getLogger(__name__)
@@ -18,34 +22,26 @@ def test_searcher_raises_no_errors(
 ):
     payload, searcher, save_paths = form_payload_searcher_save_paths(depth)
 
-    for path in save_paths.item_dir.iterdir():
-        path.unlink(missing_ok=True)
-    save_paths.item_dir.rmdir()
-
     logging.debug(f"Listing searcher test data path: {save_paths.data_path}")
 
     access_token = load_access_token()
-    resp = searcher.get_latest_listings(access_token)
+    searcher.get_latest_listings(access_token)
 
 
 @pytest.mark.api
-def test_excl_kwords(load_access_token, form_payload):
+def test_excl_kwords(load_access_token, tmp_path):
     access_token = load_access_token()
 
     excl_kwords_payload = SearchEndpointPayload(**EXAMPLE_EXCL_KWORDS_PAYLOAD_PARAMS)
-    excl_kwords_searcher = ListingSearcher(excl_kwords_payload)
-    excl_kwords_response = excl_kwords_searcher._get_listings_after(
-        access_token, latest_timestamp=None
-    )
+    excl_kwords_searcher = ListingSearcher(excl_kwords_payload, tmp_path)
+    excl_kwords_listings = excl_kwords_searcher.get_latest_listings(access_token)
 
     excl_kwords = EXAMPLE_EXCL_KWORDS_PAYLOAD_PARAMS["q"].pop("excl_kwords")
     reg_payload = SearchEndpointPayload(**EXAMPLE_EXCL_KWORDS_PAYLOAD_PARAMS)
-    reg_searcher = ListingSearcher(reg_payload)
-    reg_response = reg_searcher._get_listings_after(access_token, latest_timestamp=None)
+    reg_searcher = ListingSearcher(reg_payload, tmp_path)
+    reg_listings = reg_searcher.get_latest_listings(access_token)
 
-    reg_listing_titles = [
-        listing["title"] for listing in reg_response._raw_json["itemSummaries"]
-    ]
+    reg_listing_titles = [listing.title for listing in reg_listings]
 
     # eBay is case-insensitive
     # eBay only checks if whole word is found (hence space)
@@ -56,13 +52,98 @@ def test_excl_kwords(load_access_token, form_payload):
             "excl. kwords are not found in regular search, test is ambiguous."
         )
 
-    excl_kwords_listing_titles = [
-        listing["title"] for listing in excl_kwords_response._raw_json["itemSummaries"]
-    ]
+    excl_kwords_listing_titles = [listing.title for listing in excl_kwords_listings]
 
     if any(
         f"{kword} " in " ".join(excl_kwords_listing_titles).lower()
         for kword in excl_kwords
     ):
-        sleep(1)  # For timestamp offset
         raise ValueError("excl. kword found in listing titles.")
+
+
+@pytest.mark.api
+def test_hash_does_not_change_after_searching(
+    load_access_token, form_payload_searcher_save_paths
+):
+    access_token = load_access_token()
+    payload, searcher, save_paths = form_payload_searcher_save_paths()
+
+    before_hash = hash(payload)
+    resp = searcher.get_latest_listings(access_token)
+    after_hash = hash(searcher.payload)
+
+    assert before_hash == after_hash
+
+
+@pytest.mark.api
+def test_payload_start_date_respected(load_access_token, get_params, tmp_path):
+    access_token = load_access_token()
+    start_date_lower = datetime.now(tz=UTC) - timedelta(days=30)
+    params = get_params("simple")
+    params["filter"] = params.get("filter", {}) | {
+        "item_start_date": DatetimeRange(lower_bd=start_date_lower)
+    }
+    payload = SearchEndpointPayload(**params)
+    searcher = ListingSearcher(payload, tmp_path)
+
+    listings = searcher.get_latest_listings(access_token)
+
+    for listing in listings:
+        assert listing.item_creation_date >= start_date_lower
+
+
+@pytest.mark.parametrize("depth", ["simple", "complex"])
+@pytest.mark.api
+def test_only_new_listings_retrieved(
+    load_access_token, form_payload_searcher_save_paths, depth
+):
+
+    access_token = load_access_token()
+    payload, searcher, save_paths = form_payload_searcher_save_paths(depth)
+    payload.limit = 50
+
+    listings = searcher.get_latest_listings(access_token)  # Oldest first
+
+    # Index of the 75th percentile listing
+    # So only 25% of listings are newer
+    reference_listing_ind = 3 * (len(listings) // 4)
+    reference_listing_timestamp = listings[reference_listing_ind].item_creation_date
+
+    # Overwrite listings so newest 25% of listings are missing
+    # Retain reference listing in file
+    write_listings_to_data_path(
+        listings[: reference_listing_ind + 1], save_paths.data_path, append=False
+    )
+
+    new_listings = searcher.get_latest_listings(access_token)
+
+    # Should be ONLY new listings (hence strict)
+    are_listings_new = [
+        listing.item_creation_date > reference_listing_timestamp
+        for listing in new_listings
+    ]
+
+    if (
+        are_listings_new.count(True) == 1
+        and new_listings[are_listings_new.index(True)].item_creation_date
+        == reference_listing_timestamp
+    ):
+        raise ValueError("Reference listing in new listings.")
+
+    assert all(are_listings_new), "Stale listings in 'new listings'"
+
+    written_listings = read_listings_from_path(save_paths.data_path)
+
+    # Older listings should not be affected
+    assert written_listings[0].item_creation_date == listings[0].item_creation_date, (
+        "Oldest listing was overwritten!"
+    )
+
+    # Listings written to file must also be in oldest-first order
+    # Note non-strict because sellers may list multiple items simultaneously
+    written_listings_sorted = [
+        written_listings[i].item_creation_date
+        <= written_listings[i + 1].item_creation_date
+        for i in range(len(written_listings) - 1)
+    ]
+    assert all(written_listings_sorted)
