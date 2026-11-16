@@ -43,7 +43,6 @@ COMPLEX_EXAMPLE_PAYLOAD_PARAMS = {
             "upper_bd": 10,
         },
         "buying_options": ["FIXED_PRICE", "AUCTION"],
-        "seller_account_types": ["BUSINESS"],
         "delivery_country": "GB",
     },
 }
