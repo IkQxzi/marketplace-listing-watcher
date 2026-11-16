@@ -52,8 +52,8 @@ class SearchEndpointPayload(BaseModel):
 
     model_config = ConfigDict(
         extra="forbid",
-        validate_assignment=True,
         defer_build=True,  # So classes defined lower in file can be type-hinted to
+        frozen=True,
     )
 
     filter: SearchEndpointFilter
