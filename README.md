@@ -1,16 +1,55 @@
 # marketplace-listing-watcher: A zero-knowledge tool for finding good product deals from eBay first
-A tool which enables users to setup watchers of specific products with 0 knowledge about them, and be notified when new deals are listed. 
+A tool which enables users to setup watchers of specific products with no knowledge about them, and be notified when new deals are listed. 
+
+**Status: Work In Progress**
 
 # Outline
-1. Setup filters for a product:
-    - A watcher for a product requires filters to keep out junk and disingenuous listings
-    - The hypothesis here is that setting up filters should be zero-knowlege 
-    - For example, ou should not need to know that an unintended side effect of searching 'iphone 18' is that many other iphone variants (the Pro/Max models, other generations, etc.) will come up in the results.
-    - To enable this, the tool uses a LLM to generate precise filters for a search given to it in natural language.
-    - For example, 'iphone 18 pro' will result in filters that automatically remove the '18 pro max', '18 air', and other variants, generations, and generally anything unwanted in the results.
-    - The tool combines this with statistical filters after listings are retrieved to remove outliers.
-    - The overall effect should be that only listings you would have intended to view on the eBay site will be returned.
-2. 
+1. Describe a product in natural language:
+    - Filters are automatically generated from a description, for example 'iPhone 17 base model', or 'RTX 5060 Ti 16GB'.
+2. Retrieve new listings:
+    - The tool uses the filters from the previous steps to request only relevant listings from the eBay site, and saves them to a database on the local disk.
+3. Generate alerts (if applicable):
+    - If any listings match the criteria for a "good deal" (see <filler: section> for more details), an alert* is sent to the user. <TODO: use references>
+4. Repeat:
+    - The tool saves the filters generated in the first step, and continuously polls the API for new listings** <TODO: use references>
+
+- *This is currently implemented as a Discord bot. Feel free to ask for any other implementations, like a Telegram bot or similar.
+- **According to your API key limits: see <TODO: section: API key limits>).
+# Notes
+- This tool automatically retrieves listings using eBay's official API **only**. Scraping listings from the eBay site is strictly against eBay's Terms of Service.
+- This tool **does not** automatically purchase listings. This is also against eBay's Terms of Service.
+
+# Explanation
+
+### Filters
+---
+- A watcher for a product requires filters to keep out junk, and disingenuous listings.
+- The hypothesis here is that setting up filters should be zero-knowlege.
+- For example, you should not need to know that an unintended side effect of searching 'iphone 18' is that many other iphone variants (the Pro/Max models, other generations, etc.) will come up in the results.
+- To enable this, the tool uses a LLM to generate precise filters for a search given to it in natural language (TODO: see section x for technical details).
+- For example, 'iphone 18 pro' will result in filters that automatically remove the '18 pro max', '18 air', and other variants, generations, and generally anything unwanted in the results.
+- The tool combines this with statistical filters after listings are retrieved to remove outliers.
+- The overall effect *should* be that only listings you would have intended to view on the eBay site will be returned, but it is impossible to guarantee this with 100% certainty, so keep this in mind.
+
+### Identifying Deals
+---
+- It is only really useful to be notified of good deals, not all new listings.
+- The hypothesis here is again, one of zero-knowledge.
+- This means the tool does not require you to know how your specified product should be priced; for example, you are not expected to know that a new iPhone 18 Pro Max retails for around £1200 - the tool will infer this automatically.  
+    - Note that, while not recommended, manual price filters are possible, see <TODO: section: overrides>
+- "Good deals" are identified by calculating statistics from either one of two sources: 
+    1. The database of active listings.
+    2. Your own data.
+
+#### Active Listing Method
+- This method is convenient, because it does not require any work on your behalf, but it can present a few issues:
+    1. Active listings at a given moment may not be representative of the intrinsic price of a product, for example if the only listings left active are unwanted for price or condition reasons.
+    2. There may not *be* any active listings for a completely valid filter, especially if it is for a product at a price that is in very high demand.
+- The former issue can be mitigated somewhat by building up a database of formerly active listings, thus creating a more representative sample to draw statistical conlusions from. This means that having the tool running for a longer period of time increases its usability.
+- The latter is a more difficult problem, especially because "building up a database" now means missing out on potential deals. To this end, the tool has a setting to notify on **all** new listings; see <TODO: section: overrides/alerts> for more details.
+
+### Alerts
+- Then, listings which are "good deals" (TODO: see section 3 for more info) are identified, and alert(s) are generated to notify the user as soon as possible (TODO: see section x for more detail about alerts).
 
 # Scripts
 **HTML to CSV converter**
