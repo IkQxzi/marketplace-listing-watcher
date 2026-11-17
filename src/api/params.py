@@ -240,11 +240,10 @@ class DatetimeRange(_RangeParam[datetime], SearchPayloadParam):
     def format_datetime(self, v: datetime | None) -> str | None:
         """
         Format datetime objects to format API expects.
-        Naively assumes that datetime is specified in UK BST, converts to UTC.
+        Converts
         """
 
         if v:
-            v = v - timedelta(hours=1)  # Convert to UTC
             return f"{v.isoformat().split('+')[0]}Z"
 
         return v
