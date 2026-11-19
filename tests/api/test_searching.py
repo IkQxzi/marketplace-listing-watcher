@@ -2,11 +2,9 @@ import logging
 from datetime import UTC, datetime, timedelta
 
 import pytest
+import json
 
 from api import DatetimeRange, ListingSearcher, SearchEndpointPayload
-from api.listings import (
-    sort_listings,
-)
 from api.storage import read_listings_from_path, write_listings_to_data_path
 from tests.data.api.payloads import EXAMPLE_EXCL_KWORDS_PAYLOAD_PARAMS
 
@@ -62,17 +60,24 @@ def test_excl_kwords(load_access_token, tmp_path):
 
 
 @pytest.mark.api
-def test_hash_does_not_change_after_searching(
-    load_access_token, form_payload_searcher_save_paths
+@pytest.mark.parametrize("depth", ["complex"])
+def test_hash_does_not_change_after_repeat_search(
+    load_access_token, form_payload_searcher_save_paths, depth
 ):
     access_token = load_access_token()
-    payload, searcher, save_paths = form_payload_searcher_save_paths()
+    payload, searcher, save_paths = form_payload_searcher_save_paths(depth)
 
     before_hash = hash(payload)
-    resp = searcher.get_latest_listings(access_token)
+    before_dump = payload.model_dump()
+    searcher.get_latest_listings(access_token)
     after_hash = hash(searcher.payload)
 
-    assert before_hash == after_hash
+    assert before_hash == after_hash, "Hash did not match after singular search"
+
+    searcher.get_latest_listings(access_token)
+    assert before_hash == hash(searcher.payload), (
+        "Hash did not match after repeat search."
+    )
 
 
 @pytest.mark.api
@@ -100,7 +105,6 @@ def test_only_new_listings_retrieved(
 
     access_token = load_access_token()
     payload, searcher, save_paths = form_payload_searcher_save_paths(depth)
-    payload.limit = 50
 
     listings = searcher.get_latest_listings(access_token)  # Oldest first
 

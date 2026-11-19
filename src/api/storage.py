@@ -85,7 +85,9 @@ def read_listings_from_path(data_path: Path, count: int | None = None) -> list[L
 
     with data_path.open(mode="r", encoding="utf-8") as f:
         all_listings = [
-            Listing.model_validate_json(listing.strip()) for listing in f.readlines()
+            Listing.model_validate_json(clean_line)
+            for line in f.readlines()
+            if (clean_line := line.strip())
         ]
 
         # TODO: rewrite to actually be more efficient

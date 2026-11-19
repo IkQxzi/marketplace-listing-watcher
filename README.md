@@ -2,7 +2,7 @@
 A tool which enables users to setup watchers of specific products with no knowledge about them, and be notified when new deals are listed. 
 
 > [!NOTE]
-> This tool is a work-in-progress. See [Project Status](#project-status) for more details.
+> This tool is a work-in-progress. See [Project Status](#project-statusroadmap) for more details.
 
 # Quick Links
 - [Outline](#outline)
@@ -101,6 +101,7 @@ A tool which enables users to setup watchers of specific products with no knowle
 - The overall effect *should* be that only listings you would have intended to view on the eBay site will be returned, but it is impossible to guarantee this with 100% certainty, so keep this in mind when acting on the statistics produced by this tool.
 
 #### LLM Filter Generation
+- Work in progress. Many features missing or incomplete.
 
 ### Identifying Deals
 ---

@@ -78,7 +78,7 @@ class Listing(BaseModel):
     # ---------- Shipping ----------
     pickup_options: list[dict] | None = None  # Must be specified if no pickup option
     shipping_price: Annotated[
-        float | None,
+        Price | None,
         Field(
             validation_alias=AliasPath("shippingOptions", 0, "shippingCost", "value")
         ),
@@ -116,10 +116,24 @@ class Listing(BaseModel):
 
     @computed_field
     @property
-    def total_price(self) -> Price:
-        total = self.price if self.price else self.bid_price
-        if self.shipping_price:
-            total += self.shipping_price
+    def total_price(self) -> Price | None:
+        """Total Buy-It-Now price. See total_bid_price for auctions."""
+        total = None
+
+        if self.price:
+            total = self.price
+            total = total + (self.shipping_price or 0)
+        return total
+
+    @computed_field
+    @property
+    def total_bid_price(self) -> Price | None:
+        """Total auction price. See total_price for fixed-price listings."""
+        total = None
+
+        if self.bid_price:
+            total = self.bid_price
+            total = total + (self.shipping_price or 0)
         return total
 
     @field_validator("item_creation_date", "item_origin_date", mode="before")
