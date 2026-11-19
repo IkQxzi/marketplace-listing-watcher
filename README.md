@@ -2,26 +2,27 @@
 A tool which enables users to setup watchers of specific products with no knowledge about them, and be notified when new deals are listed. 
 
 > [!NOTE]
-> This tool is a work-in-progress. See [Project Status] for more details
+> This tool is a work-in-progress. See [Project Status] for more details.
 
 # Quick Links
-- [Outline]
-- [Requirements]
-- [Configuration]
-    - [API Keys]
-- [Usage Guide]
-    - [Filters]
-    - [Alerts]
-- [How It Works]
-    - [Filter Design]
-    - [Identifying Deals]
-        - [Own Data Method]
-        - [Active Listing Method]
-    - [Alert Behaviour]
-- [Handy Scripts]
-- [Project Status]
-- [Disclaimers]
-- [License]
+- [Outline](#outline)
+- [Project Status/Roadmap](#project-statusroadmap)
+    - [Known Issues](#known-issues)
+- [Requirements](#requirements)
+- [Configuration](#configuration)
+    - [API Keys](#api-keys)
+- [Usage Guide](#usage-guide)
+    - [Setting Up Filters](#setting-up-filters)
+    - [Configuring Alerts](#configuring-alerts)
+- [Methodology](#methodology)
+    - [Filters](#filters)
+    - [Identifying Deals](#identifying-deals)
+        - [User Data Method](#user-data-method)
+        - [Active Listing Method](#active-listing-method)
+    - [Alerts](#alerts)
+- [Handy Scripts](#handy-scripts)
+- [Disclaimers](#disclaimers)
+- [License](LICENSE)
 
 ## Outline
 1. Describe a product in natural language:
@@ -36,11 +37,57 @@ A tool which enables users to setup watchers of specific products with no knowle
 - *This is currently implemented as a Discord bot. See <TODO: section: alerts>
 - **According to your API key limits: see <TODO: section: API key limits>).
 
-## Disclaimers
-- This tool automatically retrieves listings using eBay's official API **only**. Scraping listings from the eBay site is strictly against eBay's Terms of Service.
-- This tool **does not** automatically purchase listings. This is also against eBay's Terms of Service.
+## Project Status/Roadmap
+- This tool is a work-in-progress. It is missing many key features. See below for which features are missing, which have some progress, and which are missing completely.
+- R[A]G: Filters
+    - [x] Implemented as Pydantic classes
+    - [ ] Can be manually created from entry point
+    - [ ] LLM used to generate filters from natural language
+- R[A]G: Data Retrieval
+    - [x] API polled for listings
+    - [ ] Polling done on a constant loop
+    - [ ] Deals identified by statistics from database
+- R[A]G: Data Storage
+    - [x] Active listings saved to disk 
+        - _currently .jsonl files_
+    - [ ] SQL Database used for storage
+- [R]AG: Alerts
+    - [ ] Interface for alerts to be sent to Discord
+        - Exists, needs work
+    - [ ] Configuration options to define thresholds/conditions for alerts
+- [R]AG: User Interface
+    - [ ] CLI entry point 
 
-## Explanation
+### Known Issues
+- Work in progress. Many features missing or incomplete.
+
+## Requirements
+- [uv package manager for Python][1]
+- App ID, Cert ID from the [eBay Developer portal](https://developer.ebay.com/)
+- [Discord Bot webhook URL][2]
+- Some LLM API Key
+
+## Configuration
+- Work in Progress. Will be updated soon.
+### API Keys
+
+## Usage Guide
+- Work in Progress. Will be updated soon.
+### Summary
+- Work in Progress. Will be updated soon.
+- `uv sync` to install all packages 
+
+### Setting Up Filters
+- Work in Progress. Will be updated soon.
+
+### Configuring Alerts
+- Work in Progress. Will be updated soon.
+
+### Obtaining Your Own Data
+- Work in Progress. Will be updated soon.
+- There are two ways to use this tool: with your own data, or with the active listings retrieved by previous use. (See [Identifying Deals](###identifying-deals) for more detail.)
+
+## Methodology
 
 ### Filters
 ---
@@ -77,10 +124,19 @@ A tool which enables users to setup watchers of specific products with no knowle
 - The latter is a more difficult problem, especially because "building up a database" now means missing out on potential deals. To this end, the tool has a setting to notify on **all** new listings, thereby ensuring there are no missed opportunities for very strict filters. (See <TODO: section: overrides/alerts> for more details.)
 
 ### Alerts
-- Then, listings which are "good deals" (TODO: see section 3 for more info) are identified, and alert(s) are generated to notify the user as soon as possible (TODO: see section x for more detail about alerts).
-- As of right now, only Discord
+- Work in progress. Many features missing or incomplete.
+- Alerts are generated whenever some condition is met. 
+- As of right now, only a Discord bot is planned.
 
-## Scripts
+## Handy Scripts
+- Work in Progress. Will be updated soon.
 **HTML to CSV converter**
 - Usage: `html2csv path/to/html/file item_name`
 - See `scripts/html2csv.py` for more details
+
+## Disclaimers
+- This tool automatically retrieves listings using eBay's official API **only**. Scraping listings from the eBay site is strictly against eBay's Terms of Service.
+- This tool **does not** automatically purchase listings. This is also against eBay's Terms of Service.
+
+[1]: https://docs.astral.sh/uv/getting-started/installation/
+[2]: https://docs.discord.com/developers/quick-start/getting-started
