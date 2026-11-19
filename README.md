@@ -1,9 +1,29 @@
 # marketplace-listing-watcher: A zero-knowledge tool for finding good product deals from eBay first
 A tool which enables users to setup watchers of specific products with no knowledge about them, and be notified when new deals are listed. 
 
-**Status: Work In Progress**
+> [!NOTE]
+> This tool is a work-in-progress. See [Project Status] for more details
 
-# Outline
+# Quick Links
+- [Outline]
+- [Requirements]
+- [Configuration]
+    - [API Keys]
+- [Usage Guide]
+    - [Filters]
+    - [Alerts]
+- [How It Works]
+    - [Filter Design]
+    - [Identifying Deals]
+        - [Own Data Method]
+        - [Active Listing Method]
+    - [Alert Behaviour]
+- [Handy Scripts]
+- [Project Status]
+- [Disclaimers]
+- [License]
+
+## Outline
 1. Describe a product in natural language:
     - Filters are automatically generated from a description, for example 'iPhone 17 base model', or 'RTX 5060 Ti 16GB'.
 2. Retrieve new listings:
@@ -16,11 +36,11 @@ A tool which enables users to setup watchers of specific products with no knowle
 - *This is currently implemented as a Discord bot. See <TODO: section: alerts>
 - **According to your API key limits: see <TODO: section: API key limits>).
 
-# Notes
+## Disclaimers
 - This tool automatically retrieves listings using eBay's official API **only**. Scraping listings from the eBay site is strictly against eBay's Terms of Service.
 - This tool **does not** automatically purchase listings. This is also against eBay's Terms of Service.
 
-# Explanation
+## Explanation
 
 ### Filters
 ---
@@ -60,7 +80,7 @@ A tool which enables users to setup watchers of specific products with no knowle
 - Then, listings which are "good deals" (TODO: see section 3 for more info) are identified, and alert(s) are generated to notify the user as soon as possible (TODO: see section x for more detail about alerts).
 - As of right now, only Discord
 
-# Scripts
+## Scripts
 **HTML to CSV converter**
 - Usage: `html2csv path/to/html/file item_name`
 - See `scripts/html2csv.py` for more details
