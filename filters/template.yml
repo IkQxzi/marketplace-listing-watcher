@@ -1,7 +1,7 @@
 ---
 # Template configuration file.
 # Copy this file and rename it.
-# See examples/.
+# See examples.
 
 # only "include" required
 query:
@@ -13,13 +13,12 @@ price:
   lower_bound:
   upper_bound:
 
-# leave as none to include all conditions
-# see examples/
-conditions: none
+# leave empty to include all conditions
+# see examples
+conditions:
 
 start_after:
 
-# leave as none to include all buying options
-# see examples/
-buying_options: none
-
+# leave empty to include all buying options
+# see examples
+buying_options:

@@ -142,7 +142,7 @@ class SearchEndpointPayload(BaseModel):
         return int.from_bytes(hashlib.md5(url.encode()).digest())
 
     @classmethod
-    def from_simple_yaml(cls, data: dict[str, Any]) -> Self:
+    def load_simple_yaml(cls, data: dict[str, Any]) -> Self:
         """
         Instantiate a payload from simple yaml file.\n
         Has sane defaults:
@@ -152,7 +152,7 @@ class SearchEndpointPayload(BaseModel):
 
         query = SearchEndpointQuery(
             kwords=data["query"]["include"],
-            excl_kwords=data["query"]["exclude"],
+            excl_kwords=data["query"].get("exclude"),
             join_method="AND",
         )
 
