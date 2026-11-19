@@ -13,8 +13,9 @@ A tool which enables users to setup watchers of specific products with no knowle
 4. Repeat:
     - The tool saves the filters generated in the first step, and continuously polls the API for new listings** <TODO: use references>
 
-- *This is currently implemented as a Discord bot. Feel free to ask for any other implementations, like a Telegram bot or similar.
+- *This is currently implemented as a Discord bot. See <TODO: section: alerts>
 - **According to your API key limits: see <TODO: section: API key limits>).
+
 # Notes
 - This tool automatically retrieves listings using eBay's official API **only**. Scraping listings from the eBay site is strictly against eBay's Terms of Service.
 - This tool **does not** automatically purchase listings. This is also against eBay's Terms of Service.
@@ -29,7 +30,7 @@ A tool which enables users to setup watchers of specific products with no knowle
 - To enable this, the tool uses a LLM to generate precise filters for a search given to it in natural language (TODO: see section x for technical details).
 - For example, 'iphone 18 pro' will result in filters that automatically remove the '18 pro max', '18 air', and other variants, generations, and generally anything unwanted in the results.
 - The tool combines this with statistical filters after listings are retrieved to remove outliers.
-- The overall effect *should* be that only listings you would have intended to view on the eBay site will be returned, but it is impossible to guarantee this with 100% certainty, so keep this in mind.
+- The overall effect *should* be that only listings you would have intended to view on the eBay site will be returned, but it is impossible to guarantee this with 100% certainty, so keep this in mind when acting on the statistics produced by this tool.
 
 ### Identifying Deals
 ---
@@ -38,18 +39,26 @@ A tool which enables users to setup watchers of specific products with no knowle
 - This means the tool does not require you to know how your specified product should be priced; for example, you are not expected to know that a new iPhone 18 Pro Max retails for around £1200 - the tool will infer this automatically.  
     - Note that, while not recommended, manual price filters are possible, see <TODO: section: overrides>
 - "Good deals" are identified by calculating statistics from either one of two sources: 
-    1. The database of active listings.
-    2. Your own data.
+    1. Your own data.
+    1. The local database of active listings.
+- In general, the tool checks for user data before using the local database of active listings for statistics.
+
+#### User Data Method
+- This method can be very useful, because it allows conclusions to be drawn from sold listings, which are not available via eBay's public API.
+- The tool can use data extracted from user-provided HTML pages from the eBay site. 
+- The filters are largely similar across the API and the eBay website, so the tool can generate a URL for a given filter, and open this URL in your browser. 
+- From there, you simply install the HTML source of the page, and upload it to the parser tool (see <TODO: section: parser tool/own data> for more details), and it will extract all listings and upload them to a local database.
 
 #### Active Listing Method
 - This method is convenient, because it does not require any work on your behalf, but it can present a few issues:
     1. Active listings at a given moment may not be representative of the intrinsic price of a product, for example if the only listings left active are unwanted for price or condition reasons.
     2. There may not *be* any active listings for a completely valid filter, especially if it is for a product at a price that is in very high demand.
 - The former issue can be mitigated somewhat by building up a database of formerly active listings, thus creating a more representative sample to draw statistical conlusions from. This means that having the tool running for a longer period of time increases its usability.
-- The latter is a more difficult problem, especially because "building up a database" now means missing out on potential deals. To this end, the tool has a setting to notify on **all** new listings; see <TODO: section: overrides/alerts> for more details.
+- The latter is a more difficult problem, especially because "building up a database" now means missing out on potential deals. To this end, the tool has a setting to notify on **all** new listings, thereby ensuring there are no missed opportunities for very strict filters. (See <TODO: section: overrides/alerts> for more details.)
 
 ### Alerts
 - Then, listings which are "good deals" (TODO: see section 3 for more info) are identified, and alert(s) are generated to notify the user as soon as possible (TODO: see section x for more detail about alerts).
+- As of right now, only Discord
 
 # Scripts
 **HTML to CSV converter**
