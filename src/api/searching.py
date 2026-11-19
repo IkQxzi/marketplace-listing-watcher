@@ -133,7 +133,7 @@ class ListingSearcher:
             ("warnings" in r_json or "errors" in r_json) and not ignore_warnings
         ):
             log_file_path = Path(f"temp_logs/{get_timestamp()}.txt")
-            self._dump_response(r_json, local_payload.search_value, log_file_path)
+            self._dump_response(r_json, local_payload._search_value, log_file_path)
             raise RuntimeError(
                 f"Unexpected Search Endpoint response, see {log_file_path} for more details."
             )
@@ -159,7 +159,7 @@ class ListingSearcher:
         response = SearchEndpointResponse(
             metadata=metadata,
             item_summaries=item_summaries,
-            search_value=local_payload.search_value,
+            search_value=local_payload._search_value,
             inferred_cat_id=cat_id,
             inferred_cat_name=cat_name,
             _raw_json=r_json,

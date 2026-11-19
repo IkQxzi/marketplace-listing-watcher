@@ -1,0 +1,23 @@
+---
+# Example configuration file.
+# Copy this file and rename it.
+# See template.yml for a blank copy
+
+
+query:
+  include: ["iphone", "18"]
+  exclude: ["pro", "max", "broken"]
+
+price:
+  lower_bound: 300.00
+  upper_bound: 1300
+
+conditions: 
+  new: true               
+  used: true               
+
+# tool checks everything after this
+start_after: 19/11/2026             # format: dd/mm/yyyy
+
+buying_options: none
+

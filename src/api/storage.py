@@ -1,5 +1,7 @@
 """Functionality and base classes for any part of API."""
 
+from api.params import SearchEndpointPayload
+
 import logging
 from datetime import datetime
 from pathlib import Path

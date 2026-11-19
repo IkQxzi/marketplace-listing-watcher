@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import urllib.parse
 from abc import ABC, abstractmethod
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import TYPE_CHECKING, Annotated, Any, Literal, Self
 
 from pydantic import (
@@ -54,6 +54,8 @@ class SearchEndpointPayload(BaseModel):
         extra="forbid",
         defer_build=True,  # So classes defined lower in file can be type-hinted to
         frozen=True,
+        use_attribute_docstrings=True,
+        serialize_by_alias=True,
     )
 
     filter: SearchEndpointFilter
@@ -71,7 +73,8 @@ class SearchEndpointPayload(BaseModel):
         ]
         | None
     ) = None
-    # Search Endpoint requires this to be wrapped in square brackets for ragebait reasons
+    """May not be supported correctly."""
+
     auto_correct: Literal["KEYWORD"] | None = None
     category_ids: (
         Annotated[
@@ -82,9 +85,19 @@ class SearchEndpointPayload(BaseModel):
         ]
         | None
     ) = None
-    epid: Epid | None = None  # eBay Product ID
+    epid: Epid | None = None
+    """eBay Product ID"""
     gtin: int | None = None  # UPC, EAN, ISBN
-    limit: Annotated[int, Field(ge=1, le=200)] = 50
+    """UPC, EAN, ISBN"""
+    limit: Annotated[
+        int,
+        Field(
+            ge=1,
+            le=200,
+            description="The number of listings to retrieve per request."
+            "This number is always respected, regardless of timestamp limitations",
+        ),
+    ] = 50
     offset: int = 0
 
     # TODO: link to thing
@@ -99,7 +112,8 @@ class SearchEndpointPayload(BaseModel):
 
     @computed_field
     @property
-    def search_value(self) -> str:
+    def _search_value(self) -> str:
+        """For debugging use."""
         v = ""
         if self.q:
             v += self.q.model_dump()
@@ -126,6 +140,58 @@ class SearchEndpointPayload(BaseModel):
 
         url = urllib.parse.urlencode(self.model_dump())
         return int.from_bytes(hashlib.md5(url.encode()).digest())
+
+    @classmethod
+    def from_simple_yaml(cls, data: dict[str, Any]) -> Self:
+        """
+        Instantiate a payload from simple yaml file.\n
+        Has sane defaults:
+        Autocorrect (Payload): On
+        Join method (Filter): AND
+        """
+
+        query = SearchEndpointQuery(
+            kwords=data["query"]["include"],
+            excl_kwords=data["query"]["exclude"],
+            join_method="AND",
+        )
+
+        filter_args = {
+            "price": {
+                "lower_bd": data["price"]["lower_bound"],
+                "upper_bd": data["price"]["upper_bound"],
+            },
+        }
+
+        date_parts: list[str] = data["start_after"].split("/")
+        filter_args["item_start_date"] = DatetimeRange(
+            lower_bd=datetime(
+                # Leading 0s not allowed in python ints
+                day=int(date_parts[0].removesuffix("0")),
+                month=int(date_parts[1].removesuffix("0")),
+                year=int(date_parts[2]),
+            )
+        )
+
+        if data.get("conditions"):
+            filter_args["conditions"] = []
+            if data["conditions"].get("new"):
+                filter_args["conditions"].append("NEW")
+            if data["conditions"].get("used"):
+                filter_args["conditions"].append("USED")
+
+        if data.get("buying_options"):
+            filter_args["buying_options"] = []
+            if data["buying_options"].get("auction"):
+                filter_args["buying_options"].append("AUCTION")
+            if data["buying_options"].get("buy_it_now"):
+                filter_args["buying_options"].append("FIXED_PRICE")
+            if data["buying_options"].get("best_offer"):
+                filter_args["buying_options"].append("BEST_OFFER")
+
+        filter = SearchEndpointFilter(**filter_args)
+
+        return cls(q=query, filter=filter)
 
     # Maybe offset, limit will have an issue
     # See: https://developer.ebay.com/develop/api/buy/browse_api#buy-browse_api-item_summary-search:~:text=of%20items%20returned.-,Note,-%3A%20The%20value
@@ -174,8 +240,8 @@ LowercaseList = Annotated[
 # ---------------------------- Base Classes ----------------------------
 
 
-class SearchPayloadParam(BaseModel, ABC):
-    model_config = ConfigDict(extra="forbid", validate_assignment=True)
+class SearchEndpointParam(BaseModel, ABC):
+    model_config = ConfigDict(extra="forbid", use_attribute_docstrings=True)
 
     @abstractmethod
     def serialize(self) -> str: ...
@@ -218,7 +284,7 @@ class _RangeParam[T: (int, datetime)](BaseModel):
 # ---------------------------- Param Classes ----------------------------
 
 
-class IntRange(_RangeParam[int], SearchPayloadParam):
+class IntRange(_RangeParam[int], SearchEndpointParam):
     @field_validator("lower_bd", "upper_bd")
     @classmethod
     def check_gt_zero(cls, v: int) -> int | None:
@@ -232,7 +298,7 @@ class IntRange(_RangeParam[int], SearchPayloadParam):
         return super()._range_to_str(self.lower_bd, self.upper_bd)
 
 
-class DatetimeRange(_RangeParam[datetime], SearchPayloadParam):
+class DatetimeRange(_RangeParam[datetime], SearchEndpointParam):
     # Maybe check that the date is not before today,
     # if API does not support that.
 
@@ -255,7 +321,7 @@ class DatetimeRange(_RangeParam[datetime], SearchPayloadParam):
         )
 
 
-class SearchEndpointFilter(SearchPayloadParam):
+class SearchEndpointFilter(SearchEndpointParam):
     """
     Filters which are used by SearchEndpointPayload.\n
     Some conditions unique to the 'apparel' category have been omitted.
@@ -363,7 +429,7 @@ class SearchEndpointFilter(SearchPayloadParam):
         return _comma_colon_join_dict(data)
 
 
-class SearchEndpointQuery(SearchPayloadParam):
+class SearchEndpointQuery(SearchEndpointParam):
     kwords: LowercaseList
     excl_kwords: LowercaseList | None = None
     join_method: Literal["AND", "OR"]

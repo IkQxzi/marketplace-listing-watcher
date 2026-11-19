@@ -1,0 +1,25 @@
+---
+# Template configuration file.
+# Copy this file and rename it.
+# See examples/.
+
+# only "include" required
+query:
+  include:
+  exclude: 
+
+# both required
+price:
+  lower_bound:
+  upper_bound:
+
+# leave as none to include all conditions
+# see examples/
+conditions: none
+
+start_after:
+
+# leave as none to include all buying options
+# see examples/
+buying_options: none
+
