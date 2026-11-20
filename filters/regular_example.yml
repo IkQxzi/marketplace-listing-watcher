@@ -1,0 +1,26 @@
+---
+# Example configuration file (regular).
+# Copy this file and rename it.
+# See template.yml for a blank copy
+
+
+query:
+  include: ["iphone", "18"]              # search terms (required)
+  exclude: ["pro", "max", "broken"] # list of words (default: none)
+
+price:
+  lower_bound: 300.00
+  upper_bound: 1300
+
+conditions: 
+  new: true                         # required (true/false)
+  used: true                        # required (true/false)
+
+# tool checks everything after this
+start_after: 19/11/2026             # format: dd/mm/yyyy
+
+buying_options: 
+  auction: true                     # required (true/false)
+  buy_it_now: true                  # required (true/false)
+  best_offer: true                  # required (true/false)
+
