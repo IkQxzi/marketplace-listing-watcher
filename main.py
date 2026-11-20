@@ -1,28 +1,43 @@
-from api import SearchEndpointPayload
 import logging
-import json
+import time
 from pathlib import Path
+
+import typer
+
+from api import SearchEndpointPayload
+from api.auth import get_access_token
+from api.searching import ListingSearcher
+from config.api import APP_ID, CERT_ID, REFRESH_TOKEN
+from config.dirs import TEMP_ACTIVE_DIR
 
 logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
-"""
-Implement:
-uv run main simple.yaml --price.lower=300
 
-"""
+def main(yaml_path: Path, api_limit: int = 5000) -> None:
 
+    if not REFRESH_TOKEN:
+        raise ValueError("Refresh token missing from env.")
 
-def main() -> None:
+    if not APP_ID:
+        raise ValueError("App ID missing from env.")
 
-    schema = json.dumps(SearchEndpointPayload.model_json_schema(), indent=2)
-    SearchEndpointPayload.from_simple_yaml()
+    if not CERT_ID:
+        raise ValueError("Cert ID missing from env.")
 
-    logging.info(f"{schema}")
-    Path("tmp.json").write_text(schema)
+    polling_interval = 24 * 60 * 60 / api_limit
 
-    return
+    access_token = get_access_token(REFRESH_TOKEN, APP_ID, CERT_ID)
+
+    payload = SearchEndpointPayload.load_simple_yaml(yaml_path)
+    logging.info("Loaded payload.")
+    searcher = ListingSearcher(payload, TEMP_ACTIVE_DIR)
+
+    while True:
+        listings = searcher.get_latest_listings(access_token)
+        logging.info(f"Sleeping for {polling_interval} seconds.")
+        time.sleep(polling_interval)
 
 
 if __name__ == "__main__":
-    main()
+    typer.run(main)

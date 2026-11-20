@@ -60,6 +60,18 @@ class ListingSearcher:
         Write API responses and return list of Listing objects, sorted oldest first.\n
         """
 
+        self._resolve_latest_timestamp()
+        resp = self._get_response_after_latest_timestamp(access_token)
+        sorted_listings = self.clean_listings(resp)
+        self.write_response_to_save_paths(self.save_paths, resp, sorted_listings)
+
+        return sorted_listings
+
+    def _resolve_latest_timestamp(self) -> None:
+        """
+        Resolves the latest timestamp from the newer of the last listing fetched,
+        or the payload's start date in its filter.
+        """
         latest_timestamp_opts = []
 
         if self.payload.filter.item_start_date:
@@ -79,7 +91,6 @@ class ListingSearcher:
 
         if self.save_paths.data_path.exists():
             logging.debug(f"Existing data found at {self.save_paths.data_path}")
-            (f"Existing data found at {self.save_paths.data_path}")
             latest_timestamp_opts.append(
                 read_latest_listing_timestamp(self.save_paths.data_path)
             )
@@ -88,13 +99,7 @@ class ListingSearcher:
             max(latest_timestamp_opts) if latest_timestamp_opts else None
         )
 
-        resp = self._get_response_after_timestamp(access_token)
-        sorted_listings = self.clean_listings(resp)
-        self.write_response_to_save_paths(self.save_paths, resp, sorted_listings)
-
-        return sorted_listings
-
-    def _get_response_after_timestamp(
+    def _get_response_after_latest_timestamp(
         self,
         access_token: str,
         ignore_warnings: bool = False,
@@ -129,13 +134,17 @@ class ListingSearcher:
         )
         r_json = r.json()
 
-        if "itemSummaries" not in r_json or (
-            ("warnings" in r_json or "errors" in r_json) and not ignore_warnings
-        ):
-            log_file_path = Path(f"temp_logs/{get_timestamp()}.txt")
+        log_file_path = Path(f"temp_logs/{get_timestamp()}.txt")
+        if r_json.get("warnings") and not ignore_warnings:
             self._dump_response(r_json, local_payload._search_value, log_file_path)
             raise RuntimeError(
-                f"Unexpected Search Endpoint response, see {log_file_path} for more details."
+                f"Warnings found in Search Endpoint response:\n{r_json.get('warnings')}"
+            )
+
+        if r_json.get("errors") and not ignore_warnings:
+            self._dump_response(r_json, local_payload._search_value, log_file_path)
+            raise RuntimeError(
+                f"Errors found in Search Endpoint response:\n{r_json.get('errors')}"
             )
 
         metadata = ResponseMetadata(
@@ -146,15 +155,18 @@ class ListingSearcher:
             next=r_json.get("next"),
         )
 
-        item_summaries = r_json["itemSummaries"]
+        item_summaries = r_json.get("itemSummaries", {})
 
-        cat_counts, cat_mappings = self._get_category_counts_and_mappings(
-            item_summaries
-        )
+        if item_summaries:
+            cat_counts, cat_mappings = self._get_category_counts_and_mappings(
+                item_summaries
+            )
 
-        # Infer category ID and name from most common
-        cat_id = int(cat_counts.most_common(1)[0][0])
-        cat_name = cat_mappings[cat_id]
+            # Infer category ID and name from most common
+            cat_id = int(cat_counts.most_common(1)[0][0])
+            cat_name = cat_mappings[cat_id]
+        else:
+            cat_name = cat_id = None
 
         response = SearchEndpointResponse(
             metadata=metadata,
@@ -194,7 +206,7 @@ class ListingSearcher:
 
         with log_file_path.open(mode="w") as f:
             f.write(
-                f"search_value: {search_value}\n json: {json.dumps(json_response, indent=4)}"
+                f"search_value: {search_value}\n response: {json.dumps(json_response, indent=4)}"
             )
 
     def clean_listings(self, resp: SearchEndpointResponse) -> list[Listing]:
@@ -243,4 +255,9 @@ class ListingSearcher:
                 logging.debug(f"Writing config to {paths.config_path}")
                 json.dump(self.payload.model_dump(), f, indent=2)
 
-        logging.info(f"Successfully wrote {len(listings)} listings to file.")
+        if listings:
+            logging.info(
+                f"Successfully wrote {len(listings)} listing{'s ' if len(listings) > 1 else ' '}to file: {paths.data_path}."
+            )
+        else:
+            logging.info("No new listings found.")
