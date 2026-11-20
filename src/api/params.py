@@ -1,11 +1,14 @@
 """Parameter classes for use with the Search Endpoint."""
 
 from __future__ import annotations
+import yaml
+from pathlib import Path
 
 import hashlib
 import urllib.parse
 from abc import ABC, abstractmethod
 from datetime import datetime
+from datetime import timezone
 from typing import TYPE_CHECKING, Annotated, Any, Literal, Self
 
 from pydantic import (
@@ -142,13 +145,15 @@ class SearchEndpointPayload(BaseModel):
         return int.from_bytes(hashlib.md5(url.encode()).digest())
 
     @classmethod
-    def load_simple_yaml(cls, data: dict[str, Any]) -> Self:
+    def load_simple_yaml(cls, file: Path) -> Self:
         """
         Instantiate a payload from simple yaml file.\n
         Has sane defaults:
         Autocorrect (Payload): On
         Join method (Filter): AND
         """
+
+        data = yaml.safe_load(file.open("r"))
 
         query = SearchEndpointQuery(
             kwords=data["query"]["include"],
@@ -299,8 +304,21 @@ class IntRange(_RangeParam[int], SearchEndpointParam):
 
 
 class DatetimeRange(_RangeParam[datetime], SearchEndpointParam):
+    """
+    A datetime range.
+    Always assumes UTC, unless otherwise specified
+    """
+
     # Maybe check that the date is not before today,
     # if API does not support that.
+
+    @field_validator("lower_bd", "upper_bd")
+    @classmethod
+    def convert_utc(cls, v: datetime | None) -> datetime | None:
+        if v and not v.utcoffset():
+            v = v.astimezone(tz=timezone.utc)
+
+        return v
 
     # TODO: handle non-BST
     def format_datetime(self, v: datetime | None) -> str | None:
