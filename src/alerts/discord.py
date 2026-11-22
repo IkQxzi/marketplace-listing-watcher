@@ -33,6 +33,7 @@ class DiscordBot:
                 {
                     "title": f"{listing.title}",
                     "fields": [
+                        {"name": "Web URL", "value": str(listing.web_url)},
                         {
                             "name": "Origin Time",
                             "value": f"{listing.item_origin_date.isoformat()}",

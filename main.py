@@ -36,7 +36,8 @@ def main(yaml_path: Path, api_limit: int = 5000) -> None:
     searcher = ListingSearcher(payload, TEMP_ACTIVE_DIR)
 
     while True:
-        listings = searcher.get_latest_listings(access_token)
+        listings = searcher.get_latest_listings_and_alert(access_token)
+
         logging.info(f"Sleeping for {polling_interval} seconds.")
         time.sleep(polling_interval)
 

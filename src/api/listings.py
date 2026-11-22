@@ -44,7 +44,7 @@ class Listing(BaseModel):
         alias_generator=to_camel,
         validate_by_name=True,
         validate_by_alias=True,
-        extra="forbid",
+        extra="ignore",
     )
 
     # ---------- IDs/Name ----------

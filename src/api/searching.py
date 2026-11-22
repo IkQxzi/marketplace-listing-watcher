@@ -30,16 +30,20 @@ logger = logging.getLogger(__name__)
 
 
 class ListingSearcher:
-    """Class to search for new listings."""
+    """
+    Class to search for new listings.\n
+    Requires:
+    - A payload
+    - An alerter
+    Optional:
+    - Active listing directory
+    """
 
     def __init__(
         self,
         payload: SearchEndpointPayload,
         active_listing_dir: Path = ACTIVE_DIR,
-        alerter: Alerter | None = None,
     ) -> None:
-        if alerter:
-            raise NotImplementedError
 
         self.payload = payload
         self.save_paths = SearchEndpointSavePaths(
@@ -47,13 +51,15 @@ class ListingSearcher:
         )
         self.latest_timestamp: datetime | None = None
 
-    def get_latest_listings(
+    def get_latest_listings_and_alert(
         self,
         access_token: str,
+        alerter: Alerter | None = None,
         ignore_warnings: bool = False,
     ) -> list[Listing]:
         """
         Query Search Endpoint for listings after a timestamp.\n
+        Alerts alerter if there is one.
         Timestamp is the newer of the last listing timestamp and the payload filter timestamp.\n
         Note that if there is a timestamp, the limit parameter of the payload will be ignored,
         because the API pads out the response with listings that do not respect the timestamp restriction.\n
@@ -63,6 +69,11 @@ class ListingSearcher:
         self._resolve_latest_timestamp()
         resp = self._get_response_after_latest_timestamp(access_token)
         sorted_listings = self.clean_listings(resp)
+
+        if sorted_listings and alerter:
+            alerter.alert(sorted_listings)
+
+        # Skips writing to data if there are no listings
         self.write_response_to_save_paths(self.save_paths, resp, sorted_listings)
 
         return sorted_listings
