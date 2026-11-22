@@ -1,43 +1,77 @@
 """Discord bot implementations."""
 
-import requests
+import logging
 from typing import Any
 
-from utils.misc import get_text_timestamp
-from .core import ActiveListingInfo
+import requests
+
+from api import Listing
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.DEBUG)
 
 
 class DiscordBot:
     def __init__(self, webhook_url: str) -> None:
         self.webhook_url = webhook_url
 
-    def alert(self, list_info: ActiveListingInfo) -> int:
+    def alert(self, listings: list[Listing]) -> int:
+        """Build and send the messages containing all the listings."""
 
-        message = self._build_message(list_info)
+        message = self._build_message(listings)
         status_code = self._send_message(message)
 
         return status_code
 
-    def _build_message(self, list_info: ActiveListingInfo) -> dict[str, Any]:
+    def _build_message(self, listings: list[Listing]) -> dict[str, Any]:
+        """Build the message to be sent by the bot."""
+
+        embeds: list[dict[str, Any]] = []
+
+        for listing in listings:
+            embeds.append(
+                {
+                    "title": f"{listing.title}",
+                    "fields": [
+                        {
+                            "name": "Origin Time",
+                            "value": f"{listing.item_origin_date.isoformat()}",
+                        },
+                        {
+                            "name": "Total Price",
+                            "value": f"£{listing.total_price or 'N/A'}",
+                        },
+                        {
+                            "name": "Total Bid Price",
+                            "value": f"£{listing.total_bid_price or 'N/A'}",
+                        },
+                        {
+                            "name": "Shipping Price",
+                            "value": f"£{listing.shipping_price or 0}",
+                        },
+                    ],
+                }
+            )
 
         message = {  # message to be sent by bot
             "username": "Alerter",
-            "embeds": [
-                {
-                    "title": f"{list_info.title}",
-                    "url": list_info.url,
-                    "fields": [
-                        {"name": "Time", "value": f"{list_info.timestamp}"},
-                        {"name": "Price", "value": f"£{list_info.price:.2f}"},
-                        {"name": "Percentile", "value": f"£{list_info.percentile:.1f}"},
-                    ],
-                }
-            ],
+            "embeds": embeds,
         }
 
         return message
 
-    def _send_message(self, message: dict[str, Any]) -> int:
+    def _send_message(self, message: dict[str, str | list]) -> int:
+        """
+        Send a message to webhook and return status code.
+        Raises RuntimeError if response is not 2xx.
+        """
 
-        response = requests.post(self.webhook_url, json=message)
-        return response.status_code
+        r = requests.post(self.webhook_url, json=message)
+
+        logging.debug(
+            f"response code: {r.status_code}\n response text: {r.text or 'N/A'}"
+        )
+        if str(r.status_code)[0] != "2":
+            raise RuntimeError("Unexpected response from Discord.")
+
+        return r.status_code

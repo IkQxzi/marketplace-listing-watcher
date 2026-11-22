@@ -33,7 +33,8 @@ python = ".venv"
 [tool.pytest]
 norecursedirs = ["experiments"]  # For scruffy tests
 markers = [
-    "api: marks tests as polling live API"
+    "api: marks tests as polling live API",
+    "alert: marks tests as using some bot"
 ]
 
 
