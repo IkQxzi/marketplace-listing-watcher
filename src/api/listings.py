@@ -99,6 +99,15 @@ class Listing(BaseModel):
     # ---------- Misc. ----------
     priority_listing: bool
 
+    @field_validator("web_url")
+    @classmethod
+    def shorten_web_url(cls, v: HttpUrl) -> HttpUrl:
+        str_v = str(v)
+        if "&" in str_v:
+            return HttpUrl(str_v[: str_v.index("?")])
+
+        return v
+
     @model_validator(mode="after")
     def ensure_shipping_or_pickup(self) -> Self:
         """Ensure there is a shipping price, or a pickup option"""

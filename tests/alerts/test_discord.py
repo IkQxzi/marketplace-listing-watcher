@@ -1,9 +1,8 @@
-from api.searching import ListingSearcher
 import pytest
 
 from alerts.discord import DiscordBot
 from api import Listing
-from config.alerts import DISCORD_WEBHOOK_URL
+from api.searching import ListingSearcher
 from config.alerts import DISCORD_WEBHOOK_URL
 from tests.data.api.listings import EXAMPLE_LISTING_ARGS
 
@@ -40,7 +39,13 @@ def test_discord_message_constructed_correctly_by_searcher(
     access_token = load_access_token()
 
     listings = searcher.get_latest_listings_and_alert(access_token)
-    message = bot._build_message(listings)
-    for embed, listing in zip(message["embeds"], listings):
-        assert embed["title"] == listing.title
-        assert any(field["value"] == str(listing.web_url) for field in embed["fields"])
+    messages = bot._build_messages(listings)
+
+    for i, message in enumerate(messages):
+        for j, embed in enumerate(message["embeds"]):
+            ind = 10 * i + j
+            assert embed["title"] == listings[ind].title
+            assert any(
+                field["value"] == str(listings[ind].web_url)
+                for field in embed["fields"]
+            )

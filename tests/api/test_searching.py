@@ -2,7 +2,6 @@ import logging
 from datetime import UTC, datetime, timedelta
 
 import pytest
-import json
 
 from api import DatetimeRange, ListingSearcher, SearchEndpointPayload
 from api.storage import read_listings_from_path, write_listings_to_data_path
@@ -23,7 +22,7 @@ def test_searcher_raises_no_errors(
     logging.debug(f"Listing searcher test data path: {save_paths.data_path}")
 
     access_token = load_access_token()
-    searcher.get_latest_listings(access_token)
+    searcher.get_latest_listings_and_alert(access_token)
 
 
 @pytest.mark.api
@@ -32,12 +31,14 @@ def test_excl_kwords(load_access_token, tmp_path):
 
     excl_kwords_payload = SearchEndpointPayload(**EXAMPLE_EXCL_KWORDS_PAYLOAD_PARAMS)
     excl_kwords_searcher = ListingSearcher(excl_kwords_payload, tmp_path)
-    excl_kwords_listings = excl_kwords_searcher.get_latest_listings(access_token)
+    excl_kwords_listings = excl_kwords_searcher.get_latest_listings_and_alert(
+        access_token
+    )
 
     excl_kwords = EXAMPLE_EXCL_KWORDS_PAYLOAD_PARAMS["q"].pop("excl_kwords")
     reg_payload = SearchEndpointPayload(**EXAMPLE_EXCL_KWORDS_PAYLOAD_PARAMS)
     reg_searcher = ListingSearcher(reg_payload, tmp_path)
-    reg_listings = reg_searcher.get_latest_listings(access_token)
+    reg_listings = reg_searcher.get_latest_listings_and_alert(access_token)
 
     reg_listing_titles = [listing.title for listing in reg_listings]
 
@@ -69,12 +70,12 @@ def test_hash_does_not_change_after_repeat_search(
 
     before_hash = hash(payload)
     before_dump = payload.model_dump()
-    searcher.get_latest_listings(access_token)
+    searcher.get_latest_listings_and_alert(access_token)
     after_hash = hash(searcher.payload)
 
     assert before_hash == after_hash, "Hash did not match after singular search"
 
-    searcher.get_latest_listings(access_token)
+    searcher.get_latest_listings_and_alert(access_token)
     assert before_hash == hash(searcher.payload), (
         "Hash did not match after repeat search."
     )
@@ -91,7 +92,7 @@ def test_payload_start_date_respected(load_access_token, get_params, tmp_path):
     payload = SearchEndpointPayload(**params)
     searcher = ListingSearcher(payload, tmp_path)
 
-    listings = searcher.get_latest_listings(access_token)
+    listings = searcher.get_latest_listings_and_alert(access_token)
 
     for listing in listings:
         assert listing.item_origin_date >= start_date_lower
@@ -106,7 +107,7 @@ def test_only_new_listings_retrieved(
     access_token = load_access_token()
     payload, searcher, save_paths = form_payload_searcher_save_paths(depth)
 
-    listings = searcher.get_latest_listings(access_token)  # Oldest first
+    listings = searcher.get_latest_listings_and_alert(access_token)  # Oldest first
 
     # Index of the 75th percentile listing
     # So only 25% of listings are newer
@@ -119,7 +120,7 @@ def test_only_new_listings_retrieved(
         listings[: reference_listing_ind + 1], save_paths.data_path, append=False
     )
 
-    new_listings = searcher.get_latest_listings(access_token)
+    new_listings = searcher.get_latest_listings_and_alert(access_token)
 
     # Should be ONLY new listings (hence strict)
     are_listings_new = [

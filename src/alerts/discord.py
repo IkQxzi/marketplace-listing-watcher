@@ -16,20 +16,33 @@ class DiscordBot:
         self.webhook_url = webhook_url
 
     def alert(self, listings: list[Listing]) -> int:
-        """Build and send the messages containing all the listings."""
+        """
+        Build and send the messages containing all the listings.
+        """
 
-        message = self._build_message(listings)
-        status_code = self._send_message(message)
+        messages = self._build_messages(listings)
+        status_code = self._send_messages(messages)
 
         return status_code
 
-    def _build_message(self, listings: list[Listing]) -> dict[str, Any]:
-        """Build the message to be sent by the bot."""
+    def _build_messages(self, listings: list[Listing]) -> list[dict[str, Any]]:
+        """
+        Build the messages to be sent by the bot.
+        Splits into groups of 10 listings to not hit character limit.
+        """
 
-        embeds: list[dict[str, Any]] = []
+        embeds_list: list[list[dict[str, Any]]] = [[]]
+        j = -1
 
-        for listing in listings:
-            embeds.append(
+        for i, listing in enumerate(listings):
+            if i % 10 == 0:
+                j += 1
+
+            # Ensure embeds list always has an arr at j
+            if len(embeds_list) < j + 1:
+                embeds_list.append([])
+
+            embeds_list[j].append(
                 {
                     "title": f"{listing.title}",
                     "fields": [
@@ -54,25 +67,32 @@ class DiscordBot:
                 }
             )
 
-        message = {  # message to be sent by bot
-            "username": "Alerter",
-            "embeds": embeds,
-        }
+        messages = [
+            {
+                "username": "Alerter",
+                "embeds": embeds,
+            }
+            for embeds in embeds_list
+        ]
 
-        return message
+        return messages
 
-    def _send_message(self, message: dict[str, str | list]) -> int:
+    def _send_messages(self, messages: list[dict[str, str | list]]) -> int:
         """
-        Send a message to webhook and return status code.
-        Raises RuntimeError if response is not 2xx.
+        Send messages to webhook and return status code of latest response.
+        Raises RuntimeError if any singular response is not 2xx.
         """
 
-        r = requests.post(self.webhook_url, json=message)
+        for message in messages:
+            r = requests.post(self.webhook_url, json=message)
 
-        logging.debug(
-            f"response code: {r.status_code}\n response text: {r.text or 'N/A'}"
-        )
-        if str(r.status_code)[0] != "2":
-            raise RuntimeError("Unexpected response from Discord.")
+            if str(r.status_code)[0] != "2":
+                raise RuntimeError("Unexpected response from Discord.")
+
+            logging.debug(
+                f"Sent {len(message.get('embeds'))} messages\n"
+                f"response code: {r.status_code}\n"
+                f"response text: {r.text or 'N/A'}"
+            )
 
         return r.status_code
