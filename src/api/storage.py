@@ -121,13 +121,9 @@ def read_latest_listing_timestamp(data_path: Path, oldest_first=True) -> datetim
         latest_listing_json = last if oldest_first else f.readline().strip()
 
         # Should ensure datetime on its own
-        try:
-            latest_timestamp = Listing.model_validate_json(
-                latest_listing_json
-            ).item_creation_date
-        except ValidationError:
-            print(rf"{latest_listing_json[765:775]}")
-            raise
+        latest_timestamp = Listing.model_validate_json(
+            latest_listing_json
+        ).item_origin_date
 
         logging.debug(f"Latest timestamp requested: {latest_timestamp.isoformat()}")
 

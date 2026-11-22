@@ -94,7 +94,7 @@ def test_payload_start_date_respected(load_access_token, get_params, tmp_path):
     listings = searcher.get_latest_listings(access_token)
 
     for listing in listings:
-        assert listing.item_creation_date >= start_date_lower
+        assert listing.item_origin_date >= start_date_lower
 
 
 @pytest.mark.parametrize("depth", ["simple", "complex"])
@@ -111,7 +111,7 @@ def test_only_new_listings_retrieved(
     # Index of the 75th percentile listing
     # So only 25% of listings are newer
     reference_listing_ind = 3 * (len(listings) // 4)
-    reference_listing_timestamp = listings[reference_listing_ind].item_creation_date
+    reference_listing_timestamp = listings[reference_listing_ind].item_origin_date
 
     # Overwrite listings so newest 25% of listings are missing
     # Retain reference listing in file
@@ -123,13 +123,13 @@ def test_only_new_listings_retrieved(
 
     # Should be ONLY new listings (hence strict)
     are_listings_new = [
-        listing.item_creation_date > reference_listing_timestamp
+        listing.item_origin_date > reference_listing_timestamp
         for listing in new_listings
     ]
 
     if (
         are_listings_new.count(True) == 1
-        and new_listings[are_listings_new.index(True)].item_creation_date
+        and new_listings[are_listings_new.index(True)].item_origin_date
         == reference_listing_timestamp
     ):
         raise ValueError("Reference listing in new listings.")
@@ -139,15 +139,14 @@ def test_only_new_listings_retrieved(
     written_listings = read_listings_from_path(save_paths.data_path)
 
     # Older listings should not be affected
-    assert written_listings[0].item_creation_date == listings[0].item_creation_date, (
+    assert written_listings[0].item_origin_date == listings[0].item_origin_date, (
         "Oldest listing was overwritten!"
     )
 
     # Listings written to file must also be in oldest-first order
     # Note non-strict because sellers may list multiple items simultaneously
     written_listings_sorted = [
-        written_listings[i].item_creation_date
-        <= written_listings[i + 1].item_creation_date
+        written_listings[i].item_origin_date <= written_listings[i + 1].item_origin_date
         for i in range(len(written_listings) - 1)
     ]
     assert all(written_listings_sorted)

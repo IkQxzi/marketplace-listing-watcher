@@ -220,7 +220,7 @@ class ListingSearcher:
             listings = [
                 listing
                 for listing in listings
-                if listing.item_creation_date > self.latest_timestamp
+                if listing.item_origin_date > self.latest_timestamp
             ]
         sort_listings(listings)
 
@@ -242,7 +242,9 @@ class ListingSearcher:
             logging.debug(f"Writing raw response to {paths.raw_response_path}")
             json.dump(resp._raw_json, f, indent=2)
 
-        write_listings_to_data_path(listings, paths.data_path)
+        # Skip if there are no new listings
+        if listings:
+            write_listings_to_data_path(listings, paths.data_path)
 
         with paths.metadata_path.open(mode="w") as f:
             logging.debug(f"Writing metadata to {paths.metadata_path}")

@@ -1,10 +1,11 @@
 import logging
 import time
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import typer
 
-from api import SearchEndpointPayload
+from api import Listing, SearchEndpointPayload
 from api.auth import get_access_token
 from api.searching import ListingSearcher
 from config.api import APP_ID, CERT_ID, REFRESH_TOKEN
@@ -26,6 +27,7 @@ def main(yaml_path: Path, api_limit: int = 5000) -> None:
         raise ValueError("Cert ID missing from env.")
 
     polling_interval = 24 * 60 * 60 / api_limit
+    logging.info(f"Polling interval set to {polling_interval}s.")
 
     access_token = get_access_token(REFRESH_TOKEN, APP_ID, CERT_ID)
 

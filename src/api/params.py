@@ -1,16 +1,15 @@
 """Parameter classes for use with the Search Endpoint."""
 
 from __future__ import annotations
-import yaml
-from pathlib import Path
 
 import hashlib
 import urllib.parse
 from abc import ABC, abstractmethod
-from datetime import datetime
-from datetime import timezone
+from datetime import UTC, datetime
+from pathlib import Path
 from typing import TYPE_CHECKING, Annotated, Any, Literal, Self
 
+import yaml
 from pydantic import (
     AliasGenerator,
     BaseModel,
@@ -163,8 +162,12 @@ class SearchEndpointPayload(BaseModel):
 
         filter_args = {
             "price": {
-                "lower_bd": data["price"]["lower_bound"],
-                "upper_bd": data["price"]["upper_bound"],
+                "lower_bd": data["price"].get("lower_bound")
+                if data.get("price") in data
+                else 0,
+                "upper_bd": data["price"].get("upper_bound")
+                if data.get("price") in data
+                else 10_000,
             },
         }
 
@@ -293,8 +296,8 @@ class IntRange(_RangeParam[int], SearchEndpointParam):
     @field_validator("lower_bd", "upper_bd")
     @classmethod
     def check_gt_zero(cls, v: int) -> int | None:
-        if v is not None and v <= 0:
-            raise ValueError("Bounds must be greater than 0.")
+        if v is not None and v < 0:
+            raise ValueError("Bounds must be non-negative.")
 
         return v
 
@@ -316,7 +319,7 @@ class DatetimeRange(_RangeParam[datetime], SearchEndpointParam):
     @classmethod
     def convert_utc(cls, v: datetime | None) -> datetime | None:
         if v and not v.utcoffset():
-            v = v.astimezone(tz=timezone.utc)
+            v = v.astimezone(tz=UTC)
 
         return v
 
