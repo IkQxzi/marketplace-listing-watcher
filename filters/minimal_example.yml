@@ -13,8 +13,7 @@ price:
 
 conditions: 
 
-# tool checks everything after this
-start_after: 19/11/2026             # format: dd/mm/yyyy
+start_after: 
 
 # empty
 buying_options:

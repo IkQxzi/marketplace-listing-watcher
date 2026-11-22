@@ -53,15 +53,21 @@ class DiscordBot:
                         },
                         {
                             "name": "Total Price",
-                            "value": f"£{listing.total_price or 'N/A'}",
+                            "value": f"£{listing.total_price:.2f}"
+                            if listing.total_price
+                            else "N/A",
                         },
                         {
                             "name": "Total Bid Price",
-                            "value": f"£{listing.total_bid_price or 'N/A'}",
+                            "value": f"£{listing.total_bid_price:.2f}"
+                            if listing.total_bid_price
+                            else "N/A",
                         },
                         {
                             "name": "Shipping Price",
-                            "value": f"£{listing.shipping_price or 0}",
+                            "value": f"£{listing.shipping_price:.2f}"
+                            if listing.shipping_price
+                            else str(0),
                         },
                     ],
                 }

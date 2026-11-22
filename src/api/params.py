@@ -169,15 +169,18 @@ class SearchEndpointPayload(BaseModel):
             },
         }
 
-        date_parts: list[str] = data["start_after"].split("/")
-        filter_args["item_start_date"] = DatetimeRange(
-            lower_bd=datetime(
-                # Leading 0s not allowed in python ints
-                day=int(date_parts[0].removesuffix("0")),
-                month=int(date_parts[1].removesuffix("0")),
-                year=int(date_parts[2]),
+        if data.get("start_after"):
+            date_parts: list[str] = data["start_after"].split("/")
+            filter_args["item_start_date"] = DatetimeRange(
+                lower_bd=datetime(
+                    # Leading 0s not allowed in python ints
+                    day=int(date_parts[0].removesuffix("0")),
+                    month=int(date_parts[1].removesuffix("0")),
+                    year=int(date_parts[2]),
+                )
             )
-        )
+        else:
+            filter_args["item_start_date"] = DatetimeRange(lower_bd=datetime.now())
 
         if data.get("conditions"):
             filter_args["conditions"] = []
