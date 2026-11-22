@@ -162,11 +162,9 @@ class SearchEndpointPayload(BaseModel):
 
         filter_args = {
             "price": {
-                "lower_bd": data["price"].get("lower_bound")
-                if data.get("price") in data
-                else 0,
+                "lower_bd": data["price"].get("lower_bound") if "price" in data else 0,
                 "upper_bd": data["price"].get("upper_bound")
-                if data.get("price") in data
+                if "price" in data
                 else 10_000,
             },
         }
