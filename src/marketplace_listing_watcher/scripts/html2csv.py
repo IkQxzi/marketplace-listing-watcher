@@ -2,8 +2,8 @@ from pathlib import Path
 
 import click
 
-from config.dirs import DATA_DIR, TEMP_DATA_DIR
-from parsing.parser import ListingParser
+from marketplace_listing_watcher.config.dirs import DATA_DIR, TEMP_DATA_DIR
+from marketplace_listing_watcher.parsing.parser import ListingParser
 
 LOG_DIRS = {"temp": str(TEMP_DATA_DIR)}
 

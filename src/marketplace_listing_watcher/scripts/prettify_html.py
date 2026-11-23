@@ -3,8 +3,8 @@ from pathlib import Path
 import click
 from bs4 import BeautifulSoup
 
-from config.dirs import TEMP_DATA_DIR
-from utils.io import write_to_dir
+from marketplace_listing_watcher.config.dirs import TEMP_DATA_DIR
+from marketplace_listing_watcher.utils.io import write_to_dir
 
 
 @click.command(name=None)

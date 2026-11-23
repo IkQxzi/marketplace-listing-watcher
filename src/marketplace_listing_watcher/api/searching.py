@@ -9,21 +9,21 @@ from pathlib import Path
 
 import requests
 
-from alerts.core import Alerter
-from api.listings import Listing, sort_listings
-from api.params import (
+from marketplace_listing_watcher.alerts.core import Alerter
+from marketplace_listing_watcher.api.listings import Listing, sort_listings
+from marketplace_listing_watcher.api.params import (
     DatetimeRange,
     SearchEndpointPayload,
 )
-from api.schemas import ResponseMetadata, SearchEndpointResponse
-from api.storage import (
+from marketplace_listing_watcher.api.schemas import ResponseMetadata, SearchEndpointResponse
+from marketplace_listing_watcher.api.storage import (
     SearchEndpointSavePaths,
     read_latest_listing_timestamp,
     write_listings_to_data_path,
 )
-from config.api import SEARCH_ENDPOINT
-from config.dirs import ACTIVE_DIR
-from utils.misc import get_timestamp
+from marketplace_listing_watcher.config.api import SEARCH_ENDPOINT
+from marketplace_listing_watcher.config.dirs import ACTIVE_DIR
+from marketplace_listing_watcher.utils.misc import get_timestamp
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)

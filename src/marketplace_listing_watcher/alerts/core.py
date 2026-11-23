@@ -2,7 +2,7 @@
 
 from typing import Protocol
 
-from api.listings import Listing
+from marketplace_listing_watcher.api.listings import Listing
 
 
 # Bot, SMS service, etc.

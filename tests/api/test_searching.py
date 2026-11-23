@@ -3,8 +3,8 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from api import DatetimeRange, ListingSearcher, SearchEndpointPayload
-from api.storage import read_listings_from_path, write_listings_to_data_path
+from marketplace_listing_watcher.api import DatetimeRange, ListingSearcher, SearchEndpointPayload
+from marketplace_listing_watcher.api.storage import read_listings_from_path, write_listings_to_data_path
 from tests.data.api.payloads import EXAMPLE_EXCL_KWORDS_PAYLOAD_PARAMS
 
 logger = logging.getLogger(__name__)

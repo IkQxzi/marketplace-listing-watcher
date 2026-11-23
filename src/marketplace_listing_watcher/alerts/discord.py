@@ -5,7 +5,7 @@ from typing import Any
 
 import requests
 
-from api import Listing
+from marketplace_listing_watcher.api import Listing
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)

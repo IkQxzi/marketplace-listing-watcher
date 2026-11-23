@@ -3,7 +3,7 @@ Larger tests may be split into their own modules, like test_payload.py"""
 
 import pytest
 
-from api import IntRange
+from marketplace_listing_watcher.api import IntRange
 
 
 @pytest.mark.parametrize(

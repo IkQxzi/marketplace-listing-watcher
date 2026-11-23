@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-ROOT_DIR = Path(__file__).resolve().parent.parent.parent
+ROOT_DIR = Path(__file__).resolve().parent.parent.parent.parent
 
 CONFIG_DIR = ROOT_DIR / "configs"
 FILTER_DIR = ROOT_DIR / "filters"

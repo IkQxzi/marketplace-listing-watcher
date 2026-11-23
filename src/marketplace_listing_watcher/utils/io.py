@@ -10,7 +10,7 @@ from typing import Any
 import pandas as pd
 from pandas import DataFrame, read_csv
 
-from utils.misc import get_timestamp
+from marketplace_listing_watcher.utils.misc import get_timestamp
 
 # ---------------------------- Generic ----------------------------
 
