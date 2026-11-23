@@ -1,79 +1,43 @@
-from bs4 import BeautifulSoup
-from pprint import pprint
-
+import logging
+import time
 from pathlib import Path
-from dotenv import load_dotenv
-import os
-import requests
 
-from api.auth import get_refresh_token, get_access_token
-from api import search_item
-from parsing.parser import ListingParser
-from config.dirs import ENV_PATH, TEMP_ACTIVE_DIR
-from utils.io import get_latest_search_json
+import typer
 
+from api import SearchEndpointPayload
+from api.auth import get_access_token
+from api.searching import ListingSearcher
+from config.api import APP_ID, CERT_ID, REFRESH_TOKEN
+from config.dirs import TEMP_ACTIVE_DIR
 
-def load_env_vars():
-
-    load_dotenv(ENV_PATH)
-    app_id = os.getenv("prd_app_id")
-    cert_id = os.getenv("prd_cert_id")
-    refresh_token = os.getenv("prd_refresh_token")
-
-    assert app_id and cert_id and refresh_token, "Missing credentials."
-
-    return app_id, cert_id, refresh_token
+logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 
-def load_discord_webhook_url():
+def main(yaml_path: Path, api_limit: int = 5000) -> None:
 
-    load_dotenv(ENV_PATH)
-    url = os.getenv("discord_webhook_url")
+    if not REFRESH_TOKEN:
+        raise ValueError("Refresh token missing from env.")
 
-    return url
+    if not APP_ID:
+        raise ValueError("App ID missing from env.")
 
+    if not CERT_ID:
+        raise ValueError("Cert ID missing from env.")
 
-def webhook_test():
-    print(load_discord_webhook_url())
+    polling_interval = 24 * 60 * 60 / api_limit
 
+    access_token = get_access_token(REFRESH_TOKEN, APP_ID, CERT_ID)
 
-def search_test():
+    payload = SearchEndpointPayload.load_simple_yaml(yaml_path)
+    logging.info("Loaded payload.")
+    searcher = ListingSearcher(payload, TEMP_ACTIVE_DIR)
 
-    app_id, cert_id, refresh_token = load_env_vars()
-    assert app_id and cert_id and refresh_token
-    access_token = get_access_token(refresh_token, app_id, cert_id)
-
-    item = "iphone 16 case"
-    category_id = 0
-    limit = 200
-    log_response = True
-
-    print(f"Searching for: '{item}'\n")
-
-    r_json = search_item(access_token, item, limit, category_id, log_response)
-    # pprint(r_json)
-
-    item_summaries = r_json["itemSummaries"]
-    print(f"\nNo. of items: {len(item_summaries)}")
-
-
-def stats_test():
-
-    raise NotImplementedError
-
-    data_file = get_latest_search_json(TEMP_ACTIVE_DIR, "iphone 17")
-    do_stats(data_file)
-
-
-def html_test():
-
-    parser = ListingParser()
-    df = parser.parse_sold_listings_html(item_name="iphone 17", html=TEMP_HTML_PATH)
-
-
-def main():
-    raise NotImplementedError("No entry point yet: the sold-listing fetcher was removed.")
+    while True:
+        listings = searcher.get_latest_listings(access_token)
+        logging.info(f"Sleeping for {polling_interval} seconds.")
+        time.sleep(polling_interval)
 
 
 if __name__ == "__main__":
-    main()
+    typer.run(main)

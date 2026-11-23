@@ -5,6 +5,7 @@ from pathlib import Path
 ROOT_DIR = Path(__file__).resolve().parent.parent.parent
 
 CONFIG_DIR = ROOT_DIR / "configs"
+FILTER_DIR = ROOT_DIR / "filters"
 DATA_DIR = ROOT_DIR / "data"
 SOLD_DIR = DATA_DIR / "sold"
 ACTIVE_DIR = DATA_DIR / "active"  # /search/catId_catName

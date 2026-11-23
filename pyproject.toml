@@ -18,6 +18,7 @@ dependencies = [
     "scipy>=1.18.0",
     "matplotlib>=3.11.1",
     "pydantic",
+    "typer>=0.29.2",
 ]
 
 [project.scripts]

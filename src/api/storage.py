@@ -5,7 +5,13 @@ from datetime import datetime
 from pathlib import Path
 from typing import Self
 
-from pydantic import BaseModel, computed_field, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ValidationError,
+    computed_field,
+    field_validator,
+    model_validator,
+)
 
 from api.listings import Listing
 from config.dirs import ACTIVE_DIR
@@ -74,7 +80,7 @@ def write_listings_to_data_path(
     mode = "a" if append else "w"
     with data_path.open(mode) as f:
         logging.debug(f"Writing data to {data_path}")
-        f.write("\n".join(listing_jsons) + "\n")
+        f.write(f"{'\n'.join(listing_jsons)}\n")
 
 
 # ---------------------------- Loading ----------------------------
@@ -103,17 +109,26 @@ def read_latest_listing_timestamp(data_path: Path, oldest_first=True) -> datetim
     Defaults to oldest first.
     """
 
-    # TODO: use seek() to jump to end
     with data_path.open(mode="r", encoding="utf-8") as f:
-        if oldest_first:
-            latest_listing_json = f.readlines()[-1].strip()
-        else:
-            latest_listing_json = f.readline().strip()
+        # Get last non-empty line
+        lines = f.readlines()
+        last = ""
+        i = -1
+        while not last.strip():
+            last = lines[i].strip()
+            i -= 1
+
+        latest_listing_json = last if oldest_first else f.readline().strip()
 
         # Should ensure datetime on its own
-        latest_timestamp = Listing.model_validate_json(
-            latest_listing_json
-        ).item_creation_date
+        try:
+            latest_timestamp = Listing.model_validate_json(
+                latest_listing_json
+            ).item_creation_date
+        except ValidationError:
+            print(rf"{latest_listing_json[765:775]}")
+            raise
+
         logging.debug(f"Latest timestamp requested: {latest_timestamp.isoformat()}")
 
     return latest_timestamp
