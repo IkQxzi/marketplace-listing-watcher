@@ -70,17 +70,21 @@ A tool which enables users to setup watchers of specific products with no knowle
 ## Configuration
 - Work in Progress. Will be updated soon.
 ### API Keys
+- Currently requires eBay API keys (see .env.example), as well as Discord Webhook URL
 
 ## Usage Guide
 - Work in Progress. Will be updated soon.
 ### Summary
-- Work in Progress. Will be updated soon.
-- `uv sync` to install all packages 
+- Run `uv sync` to install all packages 
+- As of right now, only a simple version with manual filters works:
+- Run `uv run typer main.py run [yaml_path]` to get this version running
 
 ### Setting Up Filters
-- Work in Progress. Will be updated soon.
+- Currently, only manually specified simplified filters are supported
+- See `filters/template.yml` for a template and explanation of options
 
 ### Configuring Alerts
+- Currently alerts for all new listings.
 - Work in Progress. Will be updated soon.
 
 ### Obtaining Your Own Data

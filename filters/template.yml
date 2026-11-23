@@ -17,6 +17,8 @@ price:
 # see examples
 conditions:
 
+# leave empty to get all listings after today
+# format: dd/mm/yyyy
 start_after:
 
 # leave empty to include all buying options

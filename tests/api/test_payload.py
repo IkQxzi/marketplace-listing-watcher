@@ -1,9 +1,7 @@
 """Testing payload from api/params.py"""
 
-from datetime import datetime
-from datetime import timezone
-
 import random
+from datetime import UTC, datetime
 
 import yaml
 
@@ -58,7 +56,7 @@ def test_simple_yaml_loading():
     regular_yml = yaml.safe_load((regular_yml_path).open("r"))
     minimal_yml = yaml.safe_load((minimal_yml_path).open("r"))
 
-    ref_datetime = datetime(day=19, month=11, year=2026, tzinfo=timezone.utc)
+    ref_datetime = datetime(day=19, month=11, year=2026, tzinfo=UTC)
 
     # Check that all things loaded into payload correctly
     reg_payload = SearchEndpointPayload.load_simple_yaml(regular_yml_path)
@@ -73,11 +71,14 @@ def test_simple_yaml_loading():
         for s in ["AUCTION", "BEST_OFFER", "FIXED_PRICE"]
     )
 
+    cur_ref_datetime = datetime.now().astimezone(tz=UTC)
     minimal_payload = SearchEndpointPayload.load_simple_yaml(minimal_yml_path)
     assert all(s in minimal_payload.q.kwords for s in minimal_yml["query"]["include"])
     assert not minimal_payload.q.excl_kwords
     assert minimal_payload.filter.price.lower_bd == minimal_yml["price"]["lower_bound"]
     assert minimal_payload.filter.price.upper_bd == minimal_yml["price"]["upper_bound"]
     assert not minimal_payload.filter.conditions
-    assert minimal_payload.filter.item_start_date.lower_bd == ref_datetime
+
+    # Default behaviour without item start date is to fetch only new listings
+    assert minimal_payload.filter.item_start_date.lower_bd > cur_ref_datetime
     assert not minimal_payload.filter.buying_options

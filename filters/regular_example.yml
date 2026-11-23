@@ -16,7 +16,6 @@ conditions:
   new: true                         # required (true/false)
   used: true                        # required (true/false)
 
-# tool checks everything after this
 start_after: 19/11/2026             # format: dd/mm/yyyy
 
 buying_options: 

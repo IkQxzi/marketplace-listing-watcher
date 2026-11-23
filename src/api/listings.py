@@ -44,6 +44,7 @@ class Listing(BaseModel):
         alias_generator=to_camel,
         validate_by_name=True,
         validate_by_alias=True,
+        extra="ignore",
     )
 
     # ---------- IDs/Name ----------
@@ -97,6 +98,15 @@ class Listing(BaseModel):
 
     # ---------- Misc. ----------
     priority_listing: bool
+
+    @field_validator("web_url")
+    @classmethod
+    def shorten_web_url(cls, v: HttpUrl) -> HttpUrl:
+        str_v = str(v)
+        if "&" in str_v:
+            return HttpUrl(str_v[: str_v.index("?")])
+
+        return v
 
     @model_validator(mode="after")
     def ensure_shipping_or_pickup(self) -> Self:
@@ -161,9 +171,9 @@ class Seller(BaseModel):
         int, Field(ge=0)
     ]  # Have no idea what the scale of this is yet
     account_type: Annotated[
-        Literal["BUSINESS", "INDIVIDUAL"],
+        Literal["BUSINESS", "INDIVIDUAL"] | None,
         Field(validation_alias=AliasPath("sellerAccountType")),
-    ]
+    ] = None
 
 
 class MarketingInfo(BaseModel):
@@ -175,4 +185,4 @@ class MarketingInfo(BaseModel):
 def sort_listings(listings: list[Listing]) -> None:
     """Sort a list of Listing objects in place, oldest to newest."""
 
-    listings.sort(key=lambda listing: listing.item_creation_date)
+    listings.sort(key=lambda listing: listing.item_origin_date)
