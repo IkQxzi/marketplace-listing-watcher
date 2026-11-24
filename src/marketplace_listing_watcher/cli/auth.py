@@ -6,7 +6,7 @@ from marketplace_listing_watcher.config.api import APP_ID, CERT_ID
 from marketplace_listing_watcher.config.dirs import ENV_PATH
 
 
-def main():
+def update_refresh():
 
     if not APP_ID:
         raise KeyError("APP_ID not found in env")
@@ -26,7 +26,3 @@ def main():
 
     with ENV_PATH.open("a") as f:
         f.write(f"\n{refresh_token=}\n")
-
-
-if __name__ == "main()":
-    main()
