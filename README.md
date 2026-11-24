@@ -77,7 +77,7 @@ A tool which enables users to setup watchers of specific products with no knowle
 ### Summary
 - Run `uv sync` to install all packages 
 - As of right now, only a simple version with manual filters works:
-- Run `uv run typer main.py run [yaml_path]` to get this version running
+- Run `mlw watch [yaml_path]` to get this version running
 
 ### Setting Up Filters
 - Currently, only manually specified simplified filters are supported
