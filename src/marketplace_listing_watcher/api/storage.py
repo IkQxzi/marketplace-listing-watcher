@@ -1,10 +1,6 @@
 """Functionality and base classes for any part of API."""
 
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from marketplace_listing_watcher.api.params import SearchEndpointPayload
-
+import json
 import logging
 from datetime import datetime
 from pathlib import Path
@@ -12,13 +8,13 @@ from typing import Self
 
 from pydantic import (
     BaseModel,
-    ValidationError,
     computed_field,
     field_validator,
     model_validator,
 )
 
 from marketplace_listing_watcher.api.listings import Listing
+from marketplace_listing_watcher.api.params import SearchEndpointPayload
 from marketplace_listing_watcher.config.dirs import ACTIVE_DIR
 from marketplace_listing_watcher.utils.misc import get_timestamp
 
@@ -96,6 +92,11 @@ def write_payload_to_path(payload: SearchEndpointPayload, path: Path) -> None:
 
 
 # ---------------------------- Loading ----------------------------
+
+
+def load_payload_from_json_path(path: Path) -> SearchEndpointPayload:
+
+    return SearchEndpointPayload.model_validate_json(path.read_text())
 
 
 def read_listings_from_path(data_path: Path, count: int | None = None) -> list[Listing]:
