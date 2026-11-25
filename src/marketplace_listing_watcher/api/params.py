@@ -16,6 +16,7 @@ from pydantic import (
     ConfigDict,
     Field,
     PlainSerializer,
+    SerializationInfo,
     SerializerFunctionWrapHandler,
     computed_field,
     field_validator,
@@ -26,7 +27,12 @@ from pydantic.alias_generators import to_camel
 
 from marketplace_listing_watcher.api import ConditionName
 from marketplace_listing_watcher.api.constants import _CONDITION_NAME_MAP
-from marketplace_listing_watcher.core.types import CountryCode, Currency, Epid, buyingOption
+from marketplace_listing_watcher.core.types import (
+    CountryCode,
+    Currency,
+    Epid,
+    buyingOption,
+)
 
 # ---------------------------- Helper Functions ----------------------------
 
@@ -118,7 +124,7 @@ class SearchEndpointPayload(BaseModel):
         """For debugging use."""
         v = ""
         if self.q:
-            v += self.q.model_dump()
+            v += self.q.model_dump(context="api")
 
         if self.epid:
             v += str(self.epid)
@@ -250,10 +256,26 @@ LowercaseList = Annotated[
 
 
 class SearchEndpointParam(BaseModel, ABC):
+    """
+    Base class for params which will be used as params for the Search Endpoint.
+    To serialise for the API, pass context="api" (returns str),
+    otherwise serialisation will return a dict.
+    """
+
     model_config = ConfigDict(extra="forbid", use_attribute_docstrings=True)
 
     @abstractmethod
-    def serialize(self) -> str: ...
+    def serialize(
+        self, handler: SerializerFunctionWrapHandler, info: SerializationInfo
+    ) -> str | dict:
+        """
+        Serialise model into API format (str),
+        or for use outside API (dict).
+        """
+        if info.context == "api":
+            return ""
+        return handler(self)
+        ...
 
     if TYPE_CHECKING:
 
@@ -302,9 +324,14 @@ class IntRange(_RangeParam[int], SearchEndpointParam):
 
         return v
 
-    @model_serializer
-    def serialize(self) -> str:
-        return super()._range_to_str(self.lower_bd, self.upper_bd)
+    @model_serializer(mode="wrap", when_used="always")
+    def serialize(
+        self, handler: SerializerFunctionWrapHandler, info: SerializationInfo
+    ) -> dict | str:
+        if info.context == "api":
+            return super()._range_to_str(self.lower_bd, self.upper_bd)
+
+        return handler(self)
 
 
 class DatetimeRange(_RangeParam[datetime], SearchEndpointParam):
@@ -336,11 +363,16 @@ class DatetimeRange(_RangeParam[datetime], SearchEndpointParam):
 
         return v
 
-    @model_serializer
-    def serialize(self) -> str:
-        return super()._range_to_str(
-            self.format_datetime(self.lower_bd), self.format_datetime(self.upper_bd)
-        )
+    @model_serializer(mode="wrap")
+    def serialize(
+        self, handler: SerializerFunctionWrapHandler, info: SerializationInfo
+    ) -> str | dict:
+        if info.context == "api":
+            return super()._range_to_str(
+                self.format_datetime(self.lower_bd), self.format_datetime(self.upper_bd)
+            )
+
+        return handler(self)
 
 
 class SearchEndpointFilter(SearchEndpointParam):
@@ -445,10 +477,14 @@ class SearchEndpointFilter(SearchEndpointParam):
         return None
 
     @model_serializer(mode="wrap")
-    def serialize(self, handler: SerializerFunctionWrapHandler) -> str:
+    def serialize(
+        self, handler: SerializerFunctionWrapHandler, info: SerializationInfo
+    ) -> str:
+        data = handler(self)
+        if info.context == "api":
+            return _comma_colon_join_dict(data)
 
-        data: dict[str, Any] = handler(self)
-        return _comma_colon_join_dict(data)
+        return data
 
 
 class SearchEndpointQuery(SearchEndpointParam):
@@ -469,19 +505,24 @@ class SearchEndpointQuery(SearchEndpointParam):
         return self
 
     @model_serializer(mode="wrap")
-    def serialize(self, handler: SerializerFunctionWrapHandler) -> str:
-        data: dict[str, Any] = handler(self)
+    def serialize(
+        self, handler: SerializerFunctionWrapHandler, info: SerializationInfo
+    ) -> str:
+        data = handler(self)
 
-        query = ""
+        if info.context == "api":
+            query = ""
 
-        if self.join_method == "AND":
-            query = " ".join(data["kwords"])
+            if self.join_method == "AND":
+                query = " ".join(data["kwords"])
 
-        if self.join_method == "OR":
-            # Has a space as well as comma in docs for some reason
-            query = "(" + ", ".join(data["kwords"]) + ")"
+            if self.join_method == "OR":
+                # Has a space as well as comma in docs for some reason
+                query = "(" + ", ".join(data["kwords"]) + ")"
 
-        if self.excl_kwords:
-            query += f" -{' -'.join(data['excl_kwords'])}"
+            if self.excl_kwords:
+                query += f" -{' -'.join(data['excl_kwords'])}"
 
-        return query
+            return query
+
+        return data

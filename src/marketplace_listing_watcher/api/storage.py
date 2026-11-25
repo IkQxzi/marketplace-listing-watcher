@@ -1,5 +1,10 @@
 """Functionality and base classes for any part of API."""
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from marketplace_listing_watcher.api.params import SearchEndpointPayload
+
 import logging
 from datetime import datetime
 from pathlib import Path
@@ -67,6 +72,8 @@ class SearchEndpointSavePaths(BaseModel):
 
 
 # ---------------------------- Saving ----------------------------
+
+
 def write_listings_to_data_path(
     listings: list[Listing], data_path: Path, append=True
 ) -> None:
@@ -81,6 +88,11 @@ def write_listings_to_data_path(
     with data_path.open(mode) as f:
         logging.debug(f"Writing data to {data_path}")
         f.write(f"{'\n'.join(listing_jsons)}\n")
+
+
+def write_payload_to_path(payload: SearchEndpointPayload, path: Path) -> None:
+    logging.debug(f"Writing payload to file: {path!s}")
+    path.write_text(payload.model_dump_json())
 
 
 # ---------------------------- Loading ----------------------------
