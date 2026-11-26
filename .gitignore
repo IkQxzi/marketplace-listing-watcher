@@ -1,8 +1,11 @@
 .idea/
 .obsidian/
 **/__pycache__/
-*.env
 .ignore
+
+# Secrets
+*.env
+token*
 
 # Environments
 .venv/
