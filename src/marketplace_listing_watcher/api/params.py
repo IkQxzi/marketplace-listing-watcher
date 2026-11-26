@@ -56,6 +56,7 @@ class SearchEndpointPayload(BaseModel):
     When epid or gtin are used, q must be empty.
     epid and gtin can be used together.
     If aspect filter specififed, category ID must be specified in both aspect filter and payload.
+    If item start date is not specified, it will be set to current datetime.
     """
 
     model_config = ConfigDict(
@@ -185,8 +186,6 @@ class SearchEndpointPayload(BaseModel):
                     year=int(date_parts[2]),
                 )
             )
-        else:
-            filter_args["item_start_date"] = DatetimeRange(lower_bd=datetime.now())
 
         if data.get("conditions"):
             filter_args["conditions"] = []
@@ -337,7 +336,7 @@ class IntRange(_RangeParam[int], SearchEndpointParam):
 class DatetimeRange(_RangeParam[datetime], SearchEndpointParam):
     """
     A datetime range.
-    Always assumes UTC, unless otherwise specified
+    Converts datetimes to UTC if timezone unspecified.
     """
 
     # Maybe check that the date is not before today,
@@ -352,7 +351,7 @@ class DatetimeRange(_RangeParam[datetime], SearchEndpointParam):
         return v
 
     # TODO: handle non-BST
-    def format_datetime(self, v: datetime | None) -> str | None:
+    def _format_datetime(self, v: datetime | None) -> str | None:
         """
         Format datetime objects to format API expects.
         Converts
@@ -369,7 +368,8 @@ class DatetimeRange(_RangeParam[datetime], SearchEndpointParam):
     ) -> str | dict:
         if info.context == "api":
             return super()._range_to_str(
-                self.format_datetime(self.lower_bd), self.format_datetime(self.upper_bd)
+                self._format_datetime(self.lower_bd),
+                self._format_datetime(self.upper_bd),
             )
 
         return handler(self)
@@ -379,6 +379,7 @@ class SearchEndpointFilter(SearchEndpointParam):
     """
     Filters which are used by SearchEndpointPayload.\n
     Some conditions unique to the 'apparel' category have been omitted.
+    Item start date defaults to now. (Can still pass None explicitly.)
     """
 
     model_config = ConfigDict(
@@ -419,7 +420,10 @@ class SearchEndpointFilter(SearchEndpointParam):
 
     # ---------- DATE ----------
     item_end_date: DatetimeRange | None = None
-    item_start_date: DatetimeRange | None = None
+    item_start_date: Annotated[
+        DatetimeRange | None,
+        Field(default=DatetimeRange(lower_bd=datetime.now(tz=UTC))),
+    ]
 
     # ---------- SELLER ----------
     sellers: (
@@ -450,17 +454,6 @@ class SearchEndpointFilter(SearchEndpointParam):
 
         if self.conditions and self.precise_conditions:
             raise ValueError("Use only one of: conditions, precise_conditions.")
-
-        if (
-            self.item_start_date
-            and self.item_end_date
-            and self.item_start_date.lower_bd
-            and self.item_end_date.upper_bd
-            and self.item_start_date.lower_bd < self.item_end_date.upper_bd
-        ):
-            raise ValueError(
-                "lower_bd of item_start_date cannot be < upper_bd of item_end_date."
-            )
 
         if self.sellers and len("|".join(str(s) for s in self.sellers)) > 250:
             raise ValueError(

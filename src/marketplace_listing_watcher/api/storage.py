@@ -1,6 +1,5 @@
 """Functionality and base classes for any part of API."""
 
-import json
 import logging
 from datetime import datetime
 from pathlib import Path
@@ -94,7 +93,10 @@ def write_payload_to_path(payload: SearchEndpointPayload, path: Path) -> None:
 # ---------------------------- Loading ----------------------------
 
 
-def load_payload_from_json_path(path: Path) -> SearchEndpointPayload:
+def load_payload_from_json_path(path: Path, new_only=True) -> SearchEndpointPayload:
+    """
+    Load payload from json.
+    """
 
     return SearchEndpointPayload.model_validate_json(path.read_text())
 
