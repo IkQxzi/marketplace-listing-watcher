@@ -70,18 +70,29 @@ A tool which enables users to setup watchers of specific products with no knowle
 ## Configuration
 - Work in Progress. Will be updated soon.
 ### API Keys
-- Currently requires eBay API keys (see .env.example), as well as Discord Webhook URL
+- eBay (production) API keys
+- Discord Webhook URL
+- See .env.example for key naming format
 
 ## Usage Guide
 - Work in Progress. Will be updated soon.
 ### Summary
-- Run `uv sync` to install all packages 
-- As of right now, only a simple version with manual filters works:
-- Run `mlw watch [yaml_path]` to get this version running
+- Run `uv tool install -e .` to install all packages and add the CLI
+- As of right now, only a simple version with manual filters works. 
+- Simple filters recommended for most users.
+**For simple filters:**
+- `mlw -s [yaml_path]`
+**For more complex filters:**
+- `mlw -j [json_path]`
 
 ### Setting Up Filters
-- Currently, only manually specified simplified filters are supported
+- Currently, only manually specified filters are supported - either simplified yaml filters **or** full-fat json filters (but not both).
+**Simplified filters:**
 - See `filters/template.yml` for a template and explanation of options
+- Use with `mlw -s [yaml_path]`
+**Full filters:**
+- Currently no templates, work-in-progress.
+- Use with `mlw -j [json_path]`
 
 ### Configuring Alerts
 - Currently alerts for all new listings.
