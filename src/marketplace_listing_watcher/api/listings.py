@@ -23,10 +23,10 @@ from pydantic import (
 )
 from pydantic.alias_generators import to_camel
 
-from api import (
+from marketplace_listing_watcher.api import (
     ConditionName,
 )
-from core.types import CountryCode, Currency, Percentage, Price, buyingOption
+from marketplace_listing_watcher.core.types import CountryCode, Currency, Percentage, Price, buyingOption
 
 
 # TODO: possibly allow CamelCase instantiation

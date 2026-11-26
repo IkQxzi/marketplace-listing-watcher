@@ -4,9 +4,9 @@ from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 
-from config.dirs import ACTIVE_DIR
-from config.filters import LLMOutputFilters
-from utils.io import read_json, write_json
+from marketplace_listing_watcher.config.dirs import ACTIVE_DIR
+from marketplace_listing_watcher.config.filters import LLMOutputFilters
+from marketplace_listing_watcher.utils.io import read_json, write_json
 
 
 def get_filters(item_name: str) -> LLMOutputFilters:

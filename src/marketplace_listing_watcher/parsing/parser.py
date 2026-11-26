@@ -5,8 +5,8 @@ from pathlib import Path
 import pandas as pd
 from bs4 import BeautifulSoup, Tag
 
-from config.dirs import DATA_DIR
-from utils.io import generate_save_path, write_df_to_dir
+from marketplace_listing_watcher.config.dirs import DATA_DIR
+from marketplace_listing_watcher.utils.io import generate_save_path, write_df_to_dir
 
 
 class ListingParser:

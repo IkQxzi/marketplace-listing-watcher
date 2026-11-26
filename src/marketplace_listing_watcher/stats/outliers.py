@@ -5,7 +5,7 @@ from dataclasses import dataclass
 import pandas as pd
 import numpy as np
 
-from utils.misc import get_text_timestamp
+from marketplace_listing_watcher.utils.misc import get_text_timestamp
 
 
 def filter_by_price(

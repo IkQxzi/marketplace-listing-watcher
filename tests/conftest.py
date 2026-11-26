@@ -6,9 +6,9 @@ from typing import Literal
 
 import pytest
 
-from api import ListingSearcher, SearchEndpointPayload, SearchEndpointSavePaths
-from api.auth import get_access_token
-from config.api import APP_ID, CERT_ID, REFRESH_TOKEN
+from marketplace_listing_watcher.api import ListingSearcher, SearchEndpointPayload, SearchEndpointSavePaths
+from marketplace_listing_watcher.api.auth import get_access_token
+from marketplace_listing_watcher.config.api import APP_ID, CERT_ID, REFRESH_TOKEN
 from tests.data.api.payloads import (
     COMPLEX_EXAMPLE_PAYLOAD_PARAMS,
     SIMPLE_EXAMPLE_PAYLOAD_PARAMS,

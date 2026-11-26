@@ -13,9 +13,9 @@ from pydantic import (
     model_validator,
 )
 
-from api.listings import Listing
-from config.dirs import ACTIVE_DIR
-from utils.misc import get_timestamp
+from marketplace_listing_watcher.api.listings import Listing
+from marketplace_listing_watcher.config.dirs import ACTIVE_DIR
+from marketplace_listing_watcher.utils.misc import get_timestamp
 
 # ---------------------------- Dataclasses ----------------------------
 

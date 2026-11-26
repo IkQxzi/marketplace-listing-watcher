@@ -4,16 +4,18 @@ from pathlib import Path
 
 import typer
 
-from alerts.discord import DiscordBot
-from api import SearchEndpointPayload
-from api.auth import get_access_token
-from api.searching import ListingSearcher
-from config.alerts import DISCORD_WEBHOOK_URL
-from config.api import APP_ID, CERT_ID, REFRESH_TOKEN
-from config.dirs import TEMP_ACTIVE_DIR
+from marketplace_listing_watcher.alerts.discord import DiscordBot
+from marketplace_listing_watcher.api import SearchEndpointPayload
+from marketplace_listing_watcher.api.auth import get_access_token
+from marketplace_listing_watcher.api.searching import ListingSearcher
+from marketplace_listing_watcher.config.alerts import DISCORD_WEBHOOK_URL
+from marketplace_listing_watcher.config.api import APP_ID, CERT_ID, REFRESH_TOKEN
+from marketplace_listing_watcher.config.dirs import TEMP_ACTIVE_DIR
 
 logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
+
+app = typer.Typer()
 
 
 def check_creds() -> None:
@@ -30,6 +32,7 @@ def check_creds() -> None:
         raise ValueError("Discord webhook URL missing from env.")
 
 
+@app.callback(invoke_without_command=True)
 def main(yaml_path: Path, api_limit: int = 5000) -> None:
 
     check_creds()
@@ -51,7 +54,3 @@ def main(yaml_path: Path, api_limit: int = 5000) -> None:
 
         logging.info(f"Sleeping for {polling_interval} seconds.")
         time.sleep(polling_interval)
-
-
-if __name__ == "__main__":
-    typer.run(main)

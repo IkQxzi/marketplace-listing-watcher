@@ -1,10 +1,8 @@
-[build-system]
-requires = ["setuptools>=61.0"]
-build-backend = "setuptools.build_meta"
-
 [project]
 name = "marketplace-listing-watcher"
 version = "0.1.0"
+description = "A zero-knowledge tool for finding good product deals from eBay first"
+readme = "README.md"
 requires-python = ">=3.12" 
 
 dependencies = [
@@ -14,15 +12,18 @@ dependencies = [
     "google-genai",
     "requests",
     "click",
-    "jupyter",
     "scipy>=1.18.0",
     "matplotlib>=3.11.1",
     "pydantic",
     "typer>=0.29.2",
 ]
 
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
 [project.scripts]
-update-refresh = "scripts.update_refresh_token:main"
+mlw = "marketplace_listing_watcher.main:app"
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -90,6 +91,7 @@ combine-as-imports = true
 [dependency-groups]
 dev = [
     "ipykernel>=7.3.0",
+    "jupyter>=1.1.1",
     "pytest>=9.1.1",
     "ruff>=0.16.3",
 ]

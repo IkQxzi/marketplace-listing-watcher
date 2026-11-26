@@ -7,9 +7,9 @@ import pandas as pd
 
 from pathlib import Path
 
-from utils.io import read_df_from_path
-from config.filters import FilterConfig
-from stats.cleaning import (
+from marketplace_listing_watcher.utils.io import read_df_from_path
+from marketplace_listing_watcher.config.filters import FilterConfig
+from marketplace_listing_watcher.stats.cleaning import (
     drop_empty_records,
     remove_trailing_name_text,
     keep_records_containing,

@@ -5,8 +5,8 @@ from datetime import UTC, datetime
 
 import yaml
 
-from api import SearchEndpointPayload
-from config.dirs import FILTER_DIR
+from marketplace_listing_watcher.api import SearchEndpointPayload
+from marketplace_listing_watcher.config.dirs import FILTER_DIR
 
 
 def test_identical_payloads_match_hashes(form_payload):

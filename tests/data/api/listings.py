@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from api.listings import Listing
+from marketplace_listing_watcher.api.listings import Listing
 
 EXAMPLE_LISTING_ARGS = {
     "title": "Some title",

@@ -6,7 +6,7 @@ import numpy as np
 from scipy import stats
 
 from dataclasses import dataclass
-from stats.distributions import LognormalParams, NormalParams
+from marketplace_listing_watcher.stats.distributions import LognormalParams, NormalParams
 
 
 @dataclass(frozen=True)

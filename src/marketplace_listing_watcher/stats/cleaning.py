@@ -9,8 +9,8 @@ from dataclasses import dataclass
 import pandas as pd
 import numpy as np
 
-from utils.misc import get_text_timestamp
-from config.filters import FilterConfig
+from marketplace_listing_watcher.utils.misc import get_text_timestamp
+from marketplace_listing_watcher.config.filters import FilterConfig
 
 
 def drop_empty_records(df: pd.DataFrame) -> pd.DataFrame:
