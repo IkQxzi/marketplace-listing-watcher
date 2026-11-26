@@ -1,7 +1,8 @@
 """Testing payload from api/params.py"""
 
 import random
-from datetime import UTC, datetime
+import pytest
+from datetime import UTC, datetime, timedelta
 
 import yaml
 
@@ -71,7 +72,8 @@ def test_simple_yaml_loading():
         for s in ["AUCTION", "BEST_OFFER", "FIXED_PRICE"]
     )
 
-    cur_ref_datetime = datetime.now().astimezone(tz=UTC)
+    # Subtract a few s to eliminate accuracy error
+    cur_ref_datetime = datetime.now().astimezone(tz=UTC) - timedelta(seconds=5)
     minimal_payload = SearchEndpointPayload.load_simple_yaml(minimal_yml_path)
     assert all(s in minimal_payload.q.kwords for s in minimal_yml["query"]["include"])
     assert not minimal_payload.q.excl_kwords
@@ -82,3 +84,10 @@ def test_simple_yaml_loading():
     # Default behaviour without item start date is to fetch only new listings
     assert minimal_payload.filter.item_start_date.lower_bd > cur_ref_datetime
     assert not minimal_payload.filter.buying_options
+
+
+@pytest.mark.skip
+def test_payload_serialisation(form_payload):
+    payload: SearchEndpointPayload = form_payload()
+
+    print(payload.model_dump_json())

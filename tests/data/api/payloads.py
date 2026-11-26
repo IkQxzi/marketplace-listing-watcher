@@ -17,6 +17,7 @@ SIMPLE_EXAMPLE_PAYLOAD_PARAMS = {
         "price_currency": "GBP",
         "conditions": ["NEW", "USED"],
         "delivery_country": "GB",
+        "item_start_date": None,
     },
 }
 
@@ -44,6 +45,7 @@ COMPLEX_EXAMPLE_PAYLOAD_PARAMS = {
         },
         "buying_options": ["FIXED_PRICE", "AUCTION"],
         "delivery_country": "GB",
+        "item_start_date": None,
     },
 }
 
@@ -65,5 +67,6 @@ EXAMPLE_EXCL_KWORDS_PAYLOAD_PARAMS = {
         "price_currency": "GBP",
         "conditions": ["NEW", "USED"],
         "delivery_country": "GB",
+        "item_start_date": None,
     },
 }

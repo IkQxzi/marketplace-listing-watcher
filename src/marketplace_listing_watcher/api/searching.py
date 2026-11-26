@@ -15,11 +15,15 @@ from marketplace_listing_watcher.api.params import (
     DatetimeRange,
     SearchEndpointPayload,
 )
-from marketplace_listing_watcher.api.schemas import ResponseMetadata, SearchEndpointResponse
+from marketplace_listing_watcher.api.schemas import (
+    ResponseMetadata,
+    SearchEndpointResponse,
+)
 from marketplace_listing_watcher.api.storage import (
     SearchEndpointSavePaths,
     read_latest_listing_timestamp,
     write_listings_to_data_path,
+    write_payload_to_path,
 )
 from marketplace_listing_watcher.config.api import SEARCH_ENDPOINT
 from marketplace_listing_watcher.config.dirs import ACTIVE_DIR
@@ -139,7 +143,7 @@ class ListingSearcher:
 
         r = requests.get(
             url=SEARCH_ENDPOINT,
-            params=local_payload.model_dump(exclude_none=True),
+            params=local_payload.model_dump(exclude_none=True, context="api"),
             headers=headers,
             timeout=10,
         )
@@ -264,9 +268,7 @@ class ListingSearcher:
         # Only bother writing config if config not already present
         # Trusts hashing to enforce uniqueness
         if not paths.config_path.exists():
-            with paths.config_path.open(mode="w") as f:
-                logging.debug(f"Writing config to {paths.config_path}")
-                json.dump(self.payload.model_dump(), f, indent=2)
+            write_payload_to_path(self.payload, paths.config_path)
 
         if listings:
             logging.info(

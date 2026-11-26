@@ -16,6 +16,7 @@ from pydantic import (
     ConfigDict,
     Field,
     PlainSerializer,
+    SerializationInfo,
     SerializerFunctionWrapHandler,
     computed_field,
     field_validator,
@@ -26,7 +27,12 @@ from pydantic.alias_generators import to_camel
 
 from marketplace_listing_watcher.api import ConditionName
 from marketplace_listing_watcher.api.constants import _CONDITION_NAME_MAP
-from marketplace_listing_watcher.core.types import CountryCode, Currency, Epid, buyingOption
+from marketplace_listing_watcher.core.types import (
+    CountryCode,
+    Currency,
+    Epid,
+    buyingOption,
+)
 
 # ---------------------------- Helper Functions ----------------------------
 
@@ -50,6 +56,7 @@ class SearchEndpointPayload(BaseModel):
     When epid or gtin are used, q must be empty.
     epid and gtin can be used together.
     If aspect filter specififed, category ID must be specified in both aspect filter and payload.
+    If item start date is not specified, it will be set to current datetime.
     """
 
     model_config = ConfigDict(
@@ -118,7 +125,7 @@ class SearchEndpointPayload(BaseModel):
         """For debugging use."""
         v = ""
         if self.q:
-            v += self.q.model_dump()
+            v += self.q.model_dump(context="api")
 
         if self.epid:
             v += str(self.epid)
@@ -179,8 +186,6 @@ class SearchEndpointPayload(BaseModel):
                     year=int(date_parts[2]),
                 )
             )
-        else:
-            filter_args["item_start_date"] = DatetimeRange(lower_bd=datetime.now())
 
         if data.get("conditions"):
             filter_args["conditions"] = []
@@ -250,10 +255,26 @@ LowercaseList = Annotated[
 
 
 class SearchEndpointParam(BaseModel, ABC):
+    """
+    Base class for params which will be used as params for the Search Endpoint.
+    To serialise for the API, pass context="api" (returns str),
+    otherwise serialisation will return a dict.
+    """
+
     model_config = ConfigDict(extra="forbid", use_attribute_docstrings=True)
 
     @abstractmethod
-    def serialize(self) -> str: ...
+    def serialize(
+        self, handler: SerializerFunctionWrapHandler, info: SerializationInfo
+    ) -> str | dict:
+        """
+        Serialise model into API format (str),
+        or for use outside API (dict).
+        """
+        if info.context == "api":
+            return ""
+        return handler(self)
+        ...
 
     if TYPE_CHECKING:
 
@@ -302,15 +323,20 @@ class IntRange(_RangeParam[int], SearchEndpointParam):
 
         return v
 
-    @model_serializer
-    def serialize(self) -> str:
-        return super()._range_to_str(self.lower_bd, self.upper_bd)
+    @model_serializer(mode="wrap", when_used="always")
+    def serialize(
+        self, handler: SerializerFunctionWrapHandler, info: SerializationInfo
+    ) -> dict | str:
+        if info.context == "api":
+            return super()._range_to_str(self.lower_bd, self.upper_bd)
+
+        return handler(self)
 
 
 class DatetimeRange(_RangeParam[datetime], SearchEndpointParam):
     """
     A datetime range.
-    Always assumes UTC, unless otherwise specified
+    Converts datetimes to UTC if timezone unspecified.
     """
 
     # Maybe check that the date is not before today,
@@ -325,7 +351,7 @@ class DatetimeRange(_RangeParam[datetime], SearchEndpointParam):
         return v
 
     # TODO: handle non-BST
-    def format_datetime(self, v: datetime | None) -> str | None:
+    def _format_datetime(self, v: datetime | None) -> str | None:
         """
         Format datetime objects to format API expects.
         Converts
@@ -336,17 +362,24 @@ class DatetimeRange(_RangeParam[datetime], SearchEndpointParam):
 
         return v
 
-    @model_serializer
-    def serialize(self) -> str:
-        return super()._range_to_str(
-            self.format_datetime(self.lower_bd), self.format_datetime(self.upper_bd)
-        )
+    @model_serializer(mode="wrap")
+    def serialize(
+        self, handler: SerializerFunctionWrapHandler, info: SerializationInfo
+    ) -> str | dict:
+        if info.context == "api":
+            return super()._range_to_str(
+                self._format_datetime(self.lower_bd),
+                self._format_datetime(self.upper_bd),
+            )
+
+        return handler(self)
 
 
 class SearchEndpointFilter(SearchEndpointParam):
     """
     Filters which are used by SearchEndpointPayload.\n
     Some conditions unique to the 'apparel' category have been omitted.
+    Item start date defaults to now. (Can still pass None explicitly.)
     """
 
     model_config = ConfigDict(
@@ -387,7 +420,10 @@ class SearchEndpointFilter(SearchEndpointParam):
 
     # ---------- DATE ----------
     item_end_date: DatetimeRange | None = None
-    item_start_date: DatetimeRange | None = None
+    item_start_date: Annotated[
+        DatetimeRange | None,
+        Field(default=DatetimeRange(lower_bd=datetime.now(tz=UTC))),
+    ]
 
     # ---------- SELLER ----------
     sellers: (
@@ -419,17 +455,6 @@ class SearchEndpointFilter(SearchEndpointParam):
         if self.conditions and self.precise_conditions:
             raise ValueError("Use only one of: conditions, precise_conditions.")
 
-        if (
-            self.item_start_date
-            and self.item_end_date
-            and self.item_start_date.lower_bd
-            and self.item_end_date.upper_bd
-            and self.item_start_date.lower_bd < self.item_end_date.upper_bd
-        ):
-            raise ValueError(
-                "lower_bd of item_start_date cannot be < upper_bd of item_end_date."
-            )
-
         if self.sellers and len("|".join(str(s) for s in self.sellers)) > 250:
             raise ValueError(
                 f"Length of joined sellers list must be < 250. Got {len('|'.join(str(s) for s in self.sellers))}"
@@ -445,10 +470,14 @@ class SearchEndpointFilter(SearchEndpointParam):
         return None
 
     @model_serializer(mode="wrap")
-    def serialize(self, handler: SerializerFunctionWrapHandler) -> str:
+    def serialize(
+        self, handler: SerializerFunctionWrapHandler, info: SerializationInfo
+    ) -> str:
+        data = handler(self)
+        if info.context == "api":
+            return _comma_colon_join_dict(data)
 
-        data: dict[str, Any] = handler(self)
-        return _comma_colon_join_dict(data)
+        return data
 
 
 class SearchEndpointQuery(SearchEndpointParam):
@@ -469,19 +498,24 @@ class SearchEndpointQuery(SearchEndpointParam):
         return self
 
     @model_serializer(mode="wrap")
-    def serialize(self, handler: SerializerFunctionWrapHandler) -> str:
-        data: dict[str, Any] = handler(self)
+    def serialize(
+        self, handler: SerializerFunctionWrapHandler, info: SerializationInfo
+    ) -> str:
+        data = handler(self)
 
-        query = ""
+        if info.context == "api":
+            query = ""
 
-        if self.join_method == "AND":
-            query = " ".join(data["kwords"])
+            if self.join_method == "AND":
+                query = " ".join(data["kwords"])
 
-        if self.join_method == "OR":
-            # Has a space as well as comma in docs for some reason
-            query = "(" + ", ".join(data["kwords"]) + ")"
+            if self.join_method == "OR":
+                # Has a space as well as comma in docs for some reason
+                query = "(" + ", ".join(data["kwords"]) + ")"
 
-        if self.excl_kwords:
-            query += f" -{' -'.join(data['excl_kwords'])}"
+            if self.excl_kwords:
+                query += f" -{' -'.join(data['excl_kwords'])}"
 
-        return query
+            return query
+
+        return data
