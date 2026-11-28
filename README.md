@@ -38,25 +38,26 @@ A tool which enables users to setup watchers of specific products with no knowle
 [^1]: According to your API key limits.
 
 ## Project Status/Roadmap
-- This tool is a work-in-progress. It is missing many key features. See below for which features are missing, which have some progress, and which are missing completely.
-- R[A]G: Filters
+- This tool is a work-in-progress. It is missing many key features. See below for which features are implemented, which have some progress, and which are missing completely.
+- RA[G]: Filters
     - [x] Implemented as Pydantic classes
-    - [ ] Can be manually created from entry point
-    - [ ] LLM used to generate filters from natural language
+    - [x] Can be manually created from entry point
+    - [x] LLM used to generate filters from natural language
 - R[A]G: Data Retrieval
     - [x] API polled for listings
-    - [ ] Polling done on a constant loop
+    - [x] Polling done on a constant loop
     - [ ] Deals identified by statistics from database
 - R[A]G: Data Storage
     - [x] Active listings saved to disk 
         - _currently .jsonl files_
     - [ ] SQL Database used for storage
-- [R]AG: Alerts
-    - [ ] Interface for alerts to be sent to Discord
-        - Exists, needs work
+- R[A]G: Alerts
+    - [x] Interface for alerts to be sent to Discord
     - [ ] Configuration options to define thresholds/conditions for alerts
-- [R]AG: User Interface
-    - [ ] CLI entry point 
+- R[A]G: User Interface
+    - [x] CLI entry point 
+    - [ ] Improved CLI (separate generate command)
+    - [ ] CLI tools (update-refresh-token, parsing)
 
 ### Known Issues
 - Work in progress. Many features missing or incomplete.
