@@ -6,14 +6,14 @@ A tool which enables users to setup watchers of specific products with no knowle
 
 # Quick Links
 - [Outline](#outline)
-- [Project Status/Roadmap](#project-statusroadmap)
-    - [Known Issues](#known-issues)
 - [Requirements](#requirements)
 - [Configuration](#configuration)
     - [API Keys](#api-keys)
 - [Usage Guide](#usage-guide)
     - [Setting Up Filters](#setting-up-filters)
     - [Configuring Alerts](#configuring-alerts)
+- [Project Status/Roadmap](#project-statusroadmap)
+    - [Known Issues](#known-issues)
 - [Methodology](#methodology)
     - [Filters](#filters)
         - [LLM Filter Generation](#llm-filter-generation)
@@ -37,29 +37,6 @@ A tool which enables users to setup watchers of specific products with no knowle
 
 [^1]: According to your API key limits.
 
-## Project Status/Roadmap
-- This tool is a work-in-progress. It is missing many key features. See below for which features are missing, which have some progress, and which are missing completely.
-- R[A]G: Filters
-    - [x] Implemented as Pydantic classes
-    - [ ] Can be manually created from entry point
-    - [ ] LLM used to generate filters from natural language
-- R[A]G: Data Retrieval
-    - [x] API polled for listings
-    - [ ] Polling done on a constant loop
-    - [ ] Deals identified by statistics from database
-- R[A]G: Data Storage
-    - [x] Active listings saved to disk 
-        - _currently .jsonl files_
-    - [ ] SQL Database used for storage
-- [R]AG: Alerts
-    - [ ] Interface for alerts to be sent to Discord
-        - Exists, needs work
-    - [ ] Configuration options to define thresholds/conditions for alerts
-- [R]AG: User Interface
-    - [ ] CLI entry point 
-
-### Known Issues
-- Work in progress. Many features missing or incomplete.
 
 ## Requirements
 - [uv package manager for Python][1]
@@ -68,25 +45,44 @@ A tool which enables users to setup watchers of specific products with no knowle
 - Some LLM API Key
 
 ## Configuration
-- Work in Progress. Will be updated soon.
 ### API Keys
-- eBay (production) API keys
+- eBay (production) API keys from [developer dashboard][3]:
+    - App ID (Production)
+    - Cert ID (Production)
+    - Refresh token (Production)
 - Discord Webhook URL
+- Gemini API key (for filter generation)
 - See .env.example for key naming format
 
 ## Usage Guide
-- Work in Progress. Will be updated soon.
-### Summary
+### Installation
+- Run `git clone https://github.com/ikqxzi/marketplace-listing-watcher`
 - Run `uv tool install -e .` to install all packages and add the CLI
-- As of right now, only a simple version with manual filters works. 
-- Simple filters recommended for most users.
-**For simple filters:**
-- `mlw -s [yaml_path]`
-**For more complex filters:**
-- `mlw -j [json_path]`
+- For most users, automatic filters are recommended. See [Setting Up Filters](#setting-up-filters) for more.
+
+### Usage
+- `mlw watch [flags] [args]`
+- See `mlw watch --help` for more info
+
+### Example usage
+- `mlw watch -g "used ps5 under 500"`
+    - Output: Filter for only new used ps5 consoles, excluding non-console listings, upper price cap of 500, reasonable lower price cap
+- `mlw watch -g "existing iphone 18"`
+    - Output: Filter for active iphone 18s at any price, assuming base model (excluding Pro/Max lineup).
+- `mlw watch -g "samsung s24 ultra" -d 1000`
+    - Will only poll up to 1000 times per day (up from the default 5000)
+
+### Notes
+- The default daily limit (set by `-d|--daily-limit`) defaults to 5000, the limit for one API key. Adjust accordingly.
+- The watcher now run constantly, polling the API as often as the API key limit is set.
+- Note that the filters default to return only new listings.
+- Mention "existing" in the natural language description to return active listings.
 
 ### Setting Up Filters
-- Currently, only manually specified filters are supported - either simplified yaml filters **or** full-fat json filters (but not both).
+- Currently, there are three types of filters supported: automatic filters, simplified filters, and full (manual) filters.
+- Filters are per-watcher-call, meaning they do not automatically persist across sessions. This will be implemented in future.
+**Automatic filters:**
+- Use with `mlw -g [natural language description]`
 **Simplified filters:**
 - See `filters/template.yml` for a template and explanation of options
 - Use with `mlw -s [yaml_path]`
@@ -95,12 +91,38 @@ A tool which enables users to setup watchers of specific products with no knowle
 - Use with `mlw -j [json_path]`
 
 ### Configuring Alerts
-- Currently alerts for all new listings.
+- Currently alerts for all new listings. Therefore, you should 
 - Work in Progress. Will be updated soon.
 
 ### Obtaining Your Own Data
 - Work in Progress. Will be updated soon.
 - There are two ways to use this tool: with your own data, or with the active listings retrieved by previous use. (See [Identifying Deals](###identifying-deals) for more detail.)
+
+## Project Status/Roadmap
+- This tool is a work-in-progress. It is missing many key features. See below for which features are implemented, which have some progress, and which are missing completely.
+- RA[G]: Filters
+    - [x] Implemented as Pydantic classes
+    - [x] Can be manually created from entry point
+    - [x] LLM used to generate filters from natural language
+- R[A]G: Data Retrieval
+    - [x] API polled for listings
+    - [x] Polling done on a constant loop
+    - [ ] Deals identified by statistics from database
+- R[A]G: Data Storage
+    - [x] Active listings saved to disk 
+        - _currently .jsonl files_
+    - [ ] SQL Database used for storage
+- R[A]G: Alerts
+    - [x] Interface for alerts to be sent to Discord
+    - [ ] Configuration options to define thresholds/conditions for alerts
+- R[A]G: User Interface
+    - [x] CLI entry point 
+    - [ ] Improved CLI (separate generate command)
+    - [ ] CLI tools (update-refresh-token, parsing)
+
+### Known Issues
+- For very precise restrictions - those that may not return any currently active listings - the payload quality may not be as good as hoped, simply because there are no results for the LLM to validate its generated payload against.
+- Logging - the CLI just spews out logs, will fix at some point.
 
 ## Methodology
 
@@ -159,3 +181,4 @@ A tool which enables users to setup watchers of specific products with no knowle
 
 [1]: https://docs.astral.sh/uv/getting-started/installation/
 [2]: https://docs.discord.com/developers/quick-start/getting-started
+[3]: https://developer.ebay.com/my/keys
