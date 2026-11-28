@@ -74,6 +74,7 @@ class GeminiClient:
             model=self._model,
             input=prompt if prompt else self._user_input,
             system_instruction=self._system_prompt,
+            previous_interaction_id=self._interaction_id,
         )
 
         if not interaction.output_text:
