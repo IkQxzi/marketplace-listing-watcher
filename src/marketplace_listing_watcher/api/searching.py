@@ -77,7 +77,7 @@ class ListingSearcher:
         sorted_listings = self.clean_listings(resp)
 
         if sorted_listings and alerter:
-            alerter.alert(sorted_listings)
+            alerter.alert(sorted_listings, datetime.now())
 
         # Skips writing to data if there are no listings
         self.write_response_to_save_paths(

@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import pytest
 
 from marketplace_listing_watcher.alerts.discord import DiscordBot
@@ -21,7 +23,7 @@ def test_discord_alert_returns_2xx():
         for i in range(3)
     ]
 
-    status_code = bot.alert(listings)
+    status_code = bot.alert(listings, datetime.now())
     assert str(status_code)[0] == "2"
 
 
@@ -39,7 +41,7 @@ def test_discord_message_constructed_correctly_by_searcher(
     access_token = load_access_token()
 
     listings = searcher.get_latest_listings_and_alert(access_token)
-    messages = bot._build_messages(listings)
+    messages = bot._build_messages(listings, datetime.now())
 
     for i, message in enumerate(messages):
         for j, embed in enumerate(message["embeds"]):
