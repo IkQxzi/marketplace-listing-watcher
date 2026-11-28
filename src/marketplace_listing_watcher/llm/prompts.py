@@ -41,7 +41,8 @@ null only if the user wants existing listings too.
 - `item_end_date`: set it only for things like "auctions ending in the next 24 hours".
 - `sellers` / `seller_account_types`: set them only if the user mentions particular sellers, or private vs business sellers.
 
-Leave out any optional field you have no reason to set, rather than filling it with a guess.
+Leave out any optional field you have no reason to set, rather than filling it with a guess. It is okay for the response from the endpoint to not return any new listings,
+the user may set restrictions so precise that listings meeting the criteria sell quickly.
 """
 
 REFINEMENT_PROMPT = """

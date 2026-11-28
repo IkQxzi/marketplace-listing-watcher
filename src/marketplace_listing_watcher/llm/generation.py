@@ -1,4 +1,5 @@
 import json
+import logging
 from datetime import datetime
 
 from google import genai
@@ -13,10 +14,11 @@ from marketplace_listing_watcher.llm.prompts import REFINEMENT_PROMPT, SYSTEM_PR
 class GeminiClient:
     """
     Client to prompt Gemini for Search Endpoint payload.
-    Uses up to max_llm_request requests to Gemini before raising error.
-    Uses access token to refine payload by showing LLM a Search Endpoint response,
-    so uses 1 API request to Search Endopint also.
+    Continually refines payload until max number of LLM requests reached.
+    Refines payload by showing LLM a Search Endpoint response,
+    so uses some API requests to Search Endpoint also (up to llm_requests - 1).
     Defaults to Gemini 3.5 Flash Lite.
+    If no listings are returned by requests using the payload generated, a warning is raised.
     """
 
     def __init__(
@@ -24,7 +26,7 @@ class GeminiClient:
         user_input: str,
         api_key: str,
         access_token: str,
-        max_llm_requests: int = 5,
+        llm_requests: int = 5,
         model="gemini-3.5-flash-lite",
     ) -> None:
         self._MODEL = model
@@ -32,8 +34,8 @@ class GeminiClient:
         self._interaction_id: str | None = None
 
         self._access_token = access_token
-        self._max_llm_requests = max_llm_requests
-        self._reattempt_count = 0
+        self._llm_requests = llm_requests
+        self._request_count = 0
         self._error_json_list = []
 
         self._user_input = user_input
@@ -50,24 +52,34 @@ class GeminiClient:
         """
 
         self._form_payload(self._user_input)
-        self._refine_payload()  # Calls _form_payload() also
+        while self._request_count < self._llm_requests:
+            # breakpoint()
+            self._refine_payload()  # Calls _form_payload() also
 
         if not self._payload:
             raise ValueError(
                 "After max reattempts, payload still not formed correctly!"
             )
+
+        listings = ListingSearcher(
+            self._payload, LOG_DIR
+        ).get_latest_listings_and_alert(self._access_token)
+        if len(listings) == 0:
+            logging.warning(
+                "No listings were returned for this result. The filters may be too precise."
+            )
         return self._payload
 
     def _form_payload(self, prompt: str) -> SearchEndpointPayload:
-        if self._reattempt_count == self._max_llm_requests:
+        if self._request_count == self._llm_requests:
             raise RuntimeError("Exceeded max reattempts.")
 
+        self._request_count += 1
         try:
             llm_output = self._prompt_for_payload_json(prompt)
             llm_output = self._remove_json_flag(llm_output)
             payload = SearchEndpointPayload.model_validate_json(llm_output)
         except ValidationError as e:
-            self._reattempt_count += 1
             self._error_json_list += e.json()
             prompt = self._create_error_prompt(e.json())
             payload = self._form_payload(prompt)
@@ -79,9 +91,9 @@ class GeminiClient:
         payload_copy = self._payload.model_copy(deep=True)
         payload_copy.filter.item_start_date = None
         searcher = ListingSearcher(payload_copy, LOG_DIR)
-        listings = searcher.get_latest_listings_and_alert(self._access_token)
-        if len(listings) == 0:
-            raise ValueError("No listings returned by result!")
+        listings = searcher.get_latest_listings_and_alert(
+            self._access_token, overwrite=True
+        )
 
         listing_titles = [listing.title for listing in listings]
         prompt = self._create_prompt_from_titles(listing_titles)
@@ -94,7 +106,6 @@ class GeminiClient:
         Uses the _error_list attribute to see previous errors.
         """
 
-        breakpoint()
         interaction_args = {
             "model": self._MODEL,
             "input": prompt,

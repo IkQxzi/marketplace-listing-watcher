@@ -1,4 +1,3 @@
-from marketplace_listing_watcher.config.llm import GEMINI_API_KEY
 import logging
 import time
 from pathlib import Path
@@ -6,7 +5,6 @@ from typing import Annotated
 
 import typer
 
-from marketplace_listing_watcher.llm.generation import GeminiClient
 from marketplace_listing_watcher.alerts.discord import DiscordBot
 from marketplace_listing_watcher.api import SearchEndpointPayload
 from marketplace_listing_watcher.api.auth import get_access_token
@@ -15,6 +13,8 @@ from marketplace_listing_watcher.api.storage import load_payload_from_json_path
 from marketplace_listing_watcher.config.alerts import DISCORD_WEBHOOK_URL
 from marketplace_listing_watcher.config.api import APP_ID, CERT_ID, REFRESH_TOKEN
 from marketplace_listing_watcher.config.dirs import TEMP_ACTIVE_DIR
+from marketplace_listing_watcher.config.llm import GEMINI_API_KEY
+from marketplace_listing_watcher.llm.generation import GeminiClient
 
 logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)

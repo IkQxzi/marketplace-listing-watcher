@@ -59,6 +59,7 @@ class ListingSearcher:
         self,
         access_token: str,
         alerter: Alerter | None = None,
+        overwrite: bool = False,
         ignore_warnings: bool = False,
     ) -> list[Listing]:
         """
@@ -67,6 +68,7 @@ class ListingSearcher:
         Timestamp is the newer of the last listing timestamp and the payload filter timestamp.\n
         Note that if there is a timestamp, the limit parameter of the payload will be ignored,
         because the API pads out the response with listings that do not respect the timestamp restriction.\n
+        Pass overwrite = True to overwrite existing data
         Write API responses and return list of Listing objects, sorted oldest first.\n
         """
 
@@ -78,7 +80,9 @@ class ListingSearcher:
             alerter.alert(sorted_listings)
 
         # Skips writing to data if there are no listings
-        self.write_response_to_save_paths(self.save_paths, resp, sorted_listings)
+        self.write_response_to_save_paths(
+            self.save_paths, resp, sorted_listings, overwrite
+        )
 
         return sorted_listings
 
@@ -246,6 +250,7 @@ class ListingSearcher:
         paths: SearchEndpointSavePaths,
         resp: SearchEndpointResponse,
         listings: list[Listing],
+        overwrite_data: bool,
     ) -> None:
         """
         Write the payload config, cleaned listings, metadata, the raw response to files.\n
@@ -259,7 +264,7 @@ class ListingSearcher:
 
         # Skip if there are no new listings
         if listings:
-            write_listings_to_data_path(listings, paths.data_path)
+            write_listings_to_data_path(listings, paths.data_path, overwrite_data)
 
         with paths.metadata_path.open(mode="w") as f:
             logging.debug(f"Writing metadata to {paths.metadata_path}")
