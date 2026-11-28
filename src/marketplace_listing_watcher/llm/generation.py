@@ -50,7 +50,6 @@ class GeminiClient:
             llm_output = self._prompt_for_payload_json(_error_prompt)
             llm_output = self._clean_llm_output(llm_output)
             payload = SearchEndpointPayload.model_validate_json(llm_output)
-            breakpoint()
         except ValidationError as e:
             breakpoint()
             self._reattempt_count += 1
@@ -58,6 +57,7 @@ class GeminiClient:
             _error_prompt = self._create_error_prompt(e.json())
             self.generate_payload(_error_prompt)
 
+        breakpoint()
         if not payload:
             raise ValueError(
                 "After max reattempts, payload still not formed correctly!"
@@ -99,12 +99,3 @@ class GeminiClient:
         """
 
         return RAW_PROMPT.replace("<<TODAY>>", datetime.today().isoformat())
-
-
-if __name__ == "__main__":
-    if not GEMINI_API_KEY:
-        raise ValueError()
-    input_str = "iphone 18 base model"
-    client = GeminiClient(input_str, GEMINI_API_KEY)
-    payload = client.generate_payload()
-    breakpoint()

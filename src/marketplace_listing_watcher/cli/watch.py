@@ -1,3 +1,4 @@
+from marketplace_listing_watcher.config.llm import GEMINI_API_KEY
 import logging
 import time
 from pathlib import Path
@@ -5,6 +6,7 @@ from typing import Annotated
 
 import typer
 
+from marketplace_listing_watcher.llm.generation import GeminiClient
 from marketplace_listing_watcher.alerts.discord import DiscordBot
 from marketplace_listing_watcher.api import SearchEndpointPayload
 from marketplace_listing_watcher.api.auth import get_access_token
@@ -57,6 +59,12 @@ def get_listings_on_loop(
 
 @app.callback(invoke_without_command=True)
 def main(
+    generate: Annotated[
+        str,
+        typer.Option(
+            "-g", "--generate", help="Natural language to generate a payload from."
+        ),
+    ] = "",
     json_path_str: Annotated[
         str,
         typer.Option(
@@ -94,9 +102,9 @@ def main(
 
     polling_interval = _calculate_polling_interval(api_key_daily_limit)
 
-    if not (json_path_str or yaml_path_str):
+    if not (generate or json_path_str or yaml_path_str):
         raise ValueError(
-            "One of json_path (-j) or yaml_path (-s|-y) must be specified."
+            "One of generate (-j [text]) json_path (-j [path]) or yaml_path (-s|-y [path]) must be specified."
         )
 
     if json_path_str and yaml_path_str:
@@ -107,11 +115,18 @@ def main(
     if json_path_str:
         json_path = Path(json_path_str).resolve()
         payload = load_payload_from_json_path(json_path)
-    else:
+    if yaml_path_str:
         yaml_path = Path(yaml_path_str).resolve()
         payload = SearchEndpointPayload.load_simple_yaml(yaml_path)
+    if generate:
+        if not GEMINI_API_KEY:
+            raise ValueError()
+        client = GeminiClient(generate, GEMINI_API_KEY)
+        payload = client.generate_payload()
+
     logging.info("Loaded payload.")
 
+    breakpoint()
     searcher = ListingSearcher(payload, TEMP_ACTIVE_DIR)
 
     bot = DiscordBot(DISCORD_WEBHOOK_URL)

@@ -16,6 +16,7 @@ dependencies = [
     "matplotlib>=3.11.1",
     "pydantic",
     "typer>=0.29.2",
+    "pyyaml>=6.0.4",
 ]
 
 [build-system]
@@ -24,9 +25,6 @@ build-backend = "uv_build"
 
 [project.scripts]
 mlw = "marketplace_listing_watcher.main:app"
-
-[tool.setuptools.packages.find]
-where = ["src"]
 
 [tool.ty.environment]
 python = ".venv"
