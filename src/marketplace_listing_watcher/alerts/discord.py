@@ -1,6 +1,7 @@
 """Discord bot implementations."""
 
 import logging
+from datetime import datetime
 from typing import Any
 
 import requests
@@ -15,17 +16,19 @@ class DiscordBot:
     def __init__(self, webhook_url: str) -> None:
         self.webhook_url = webhook_url
 
-    def alert(self, listings: list[Listing]) -> int:
+    def alert(self, listings: list[Listing], timestamp: datetime) -> int:
         """
         Build and send the messages containing all the listings.
         """
 
-        messages = self._build_messages(listings)
+        messages = self._build_messages(listings, timestamp)
         status_code = self._send_messages(messages)
 
         return status_code
 
-    def _build_messages(self, listings: list[Listing]) -> list[dict[str, Any]]:
+    def _build_messages(
+        self, listings: list[Listing], timestamp: datetime
+    ) -> list[dict[str, Any]]:
         """
         Build the messages to be sent by the bot.
         Splits into groups of 10 listings to not hit character limit.
@@ -46,6 +49,10 @@ class DiscordBot:
                 {
                     "title": f"{listing.title}",
                     "fields": [
+                        {
+                            "name": "timestamp",
+                            "value": timestamp.isoformat(timespec="seconds"),
+                        },
                         {"name": "Web URL", "value": str(listing.web_url)},
                         {
                             "name": "Origin Time",

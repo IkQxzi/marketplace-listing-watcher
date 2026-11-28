@@ -13,6 +13,8 @@ from marketplace_listing_watcher.api.storage import load_payload_from_json_path
 from marketplace_listing_watcher.config.alerts import DISCORD_WEBHOOK_URL
 from marketplace_listing_watcher.config.api import APP_ID, CERT_ID, REFRESH_TOKEN
 from marketplace_listing_watcher.config.dirs import TEMP_ACTIVE_DIR
+from marketplace_listing_watcher.config.llm import GEMINI_API_KEY
+from marketplace_listing_watcher.llm.generation import GeminiClient
 
 logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -49,6 +51,7 @@ def get_listings_on_loop(
 ) -> None:
     """Retrieve latest listings on a loop, indefinitely."""
     while True:
+        breakpoint()
         listings = searcher.get_latest_listings_and_alert(access_token, bot)
 
         logging.info(f"Sleeping for {polling_interval} seconds.")
@@ -57,6 +60,12 @@ def get_listings_on_loop(
 
 @app.callback(invoke_without_command=True)
 def main(
+    generate: Annotated[
+        str,
+        typer.Option(
+            "-g", "--generate", help="Natural language to generate a payload from."
+        ),
+    ] = "",
     json_path_str: Annotated[
         str,
         typer.Option(
@@ -94,9 +103,9 @@ def main(
 
     polling_interval = _calculate_polling_interval(api_key_daily_limit)
 
-    if not (json_path_str or yaml_path_str):
+    if not (generate or json_path_str or yaml_path_str):
         raise ValueError(
-            "One of json_path (-j) or yaml_path (-s|-y) must be specified."
+            "One of generate (-j [text]) json_path (-j [path]) or yaml_path (-s|-y [path]) must be specified."
         )
 
     if json_path_str and yaml_path_str:
@@ -107,9 +116,15 @@ def main(
     if json_path_str:
         json_path = Path(json_path_str).resolve()
         payload = load_payload_from_json_path(json_path)
-    else:
+    if yaml_path_str:
         yaml_path = Path(yaml_path_str).resolve()
         payload = SearchEndpointPayload.load_simple_yaml(yaml_path)
+    if generate:
+        if not GEMINI_API_KEY:
+            raise ValueError()
+        client = GeminiClient(generate, GEMINI_API_KEY, access_token)
+        payload = client.generate_payload()
+
     logging.info("Loaded payload.")
 
     searcher = ListingSearcher(payload, TEMP_ACTIVE_DIR)

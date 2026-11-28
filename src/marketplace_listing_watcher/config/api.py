@@ -1,6 +1,7 @@
 """API config."""
 
 import os
+from datetime import timedelta
 
 from dotenv import load_dotenv
 
@@ -13,7 +14,9 @@ APP_ID = os.getenv("prd_app_id")
 CERT_ID = os.getenv("prd_cert_id")
 REFRESH_TOKEN = os.getenv("prd_refresh_token")
 ACCESS_TOKEN_PATH = ROOT_DIR / "token.json"
-ACCESS_TOKEN_REFRESH_THRESHOLD = 60  # Seconds below which new requested
+ACCESS_TOKEN_REFRESH_THRESHOLD = timedelta(
+    seconds=60
+)  # Seconds below which new requested
 
 # Endpoints
 BROWSE_ENDPOINT = "https://api.ebay.com/buy/browse/v1"

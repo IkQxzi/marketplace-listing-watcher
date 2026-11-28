@@ -84,10 +84,3 @@ def test_simple_yaml_loading():
     # Default behaviour without item start date is to fetch only new listings
     assert minimal_payload.filter.item_start_date.lower_bd > cur_ref_datetime
     assert not minimal_payload.filter.buying_options
-
-
-@pytest.mark.skip
-def test_payload_serialisation(form_payload):
-    payload: SearchEndpointPayload = form_payload()
-
-    print(payload.model_dump_json())

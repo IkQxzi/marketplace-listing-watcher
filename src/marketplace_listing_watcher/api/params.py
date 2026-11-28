@@ -37,6 +37,14 @@ from marketplace_listing_watcher.core.types import (
 # ---------------------------- Helper Functions ----------------------------
 
 
+def _split_and_lowercase_list_sorted(v: list[str]) -> list[str]:
+
+    sorted_lower = [sub.split(" ") for sub in [s.lower() for s in v]]
+
+    # Flatten
+    return sorted(string for row in sorted_lower for string in row)
+
+
 def _pipe_join_curly_wrap_sorted(v: list[str]) -> str:
     "Join list with pipes and wrap in curly braces after sorting."
     return "{" + "|".join(sorted(v)) + "}"
@@ -247,7 +255,7 @@ LowercaseBool = Annotated[Literal[True], PlainSerializer(lambda v: str(v).lower(
 
 LowercaseList = Annotated[
     list[str],
-    PlainSerializer(lambda v: sorted([s.lower() for s in v]), return_type=list),
+    PlainSerializer(_split_and_lowercase_list_sorted, return_type=list),
 ]
 
 
@@ -420,10 +428,11 @@ class SearchEndpointFilter(SearchEndpointParam):
 
     # ---------- DATE ----------
     item_end_date: DatetimeRange | None = None
-    item_start_date: Annotated[
-        DatetimeRange | None,
-        Field(default=DatetimeRange(lower_bd=datetime.now(tz=UTC))),
-    ]
+    item_start_date: DatetimeRange | None = DatetimeRange(lower_bd=datetime.now(tz=UTC))
+    """
+    If unset, will be set to the current datetime (fetches only new listings).
+    Set to None explicitly to retrieve all listings.
+    """
 
     # ---------- SELLER ----------
     sellers: (
@@ -481,19 +490,23 @@ class SearchEndpointFilter(SearchEndpointParam):
 
 
 class SearchEndpointQuery(SearchEndpointParam):
+    """excl_kwords + len(kwords) + 2*len(excl_kwords) must be <=100."""
+
     kwords: LowercaseList
     excl_kwords: LowercaseList | None = None
     join_method: Literal["AND", "OR"]
 
     @model_validator(mode="after")
-    def validate_query(self) -> Self:
+    def enforce_max_query_length(self) -> Self:
         # +2 for the first ' -' in between them
         if (
             len(" ".join(self.kwords))
             + (len(" -".join(self.excl_kwords)) + 2 if self.excl_kwords else 0)
             > 100
         ):
-            raise ValueError("Combined length of query + spaces must be <=100.")
+            raise ValueError(
+                "Combined length of all the words in kwords, excl_kwords + len(kwords) + 2*len(excl_kwords) must be <=100."
+            )
 
         return self
 

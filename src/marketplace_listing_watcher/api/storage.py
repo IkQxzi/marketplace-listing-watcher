@@ -70,7 +70,7 @@ class SearchEndpointSavePaths(BaseModel):
 
 
 def write_listings_to_data_path(
-    listings: list[Listing], data_path: Path, append=True
+    listings: list[Listing], data_path: Path, overwrite: bool = False
 ) -> None:
     """
     Write listings to data path specified.\n
@@ -79,7 +79,7 @@ def write_listings_to_data_path(
     """
     listing_jsons = [Listing.model_dump_json(listing) for listing in listings]
 
-    mode = "a" if append else "w"
+    mode = "w" if overwrite else "a"
     with data_path.open(mode) as f:
         logging.debug(f"Writing data to {data_path}")
         f.write(f"{'\n'.join(listing_jsons)}\n")

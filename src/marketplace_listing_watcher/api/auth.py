@@ -1,6 +1,7 @@
 import base64
 import json
 import logging
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import requests
@@ -72,9 +73,15 @@ def _request_access_token_info(refresh_token: str, app_id: str, cert_id: str) ->
 
 
 def _write_access_token_info(path: Path, access_token_info: dict) -> None:
+    """Writes expiry datetime also."""
+
     if not path.exists():
         path.touch()
-    json.dump(access_token_info, path.open("w"))
+
+    expires_at = (
+        datetime.now() + timedelta(seconds=access_token_info["expires_in"])
+    ).isoformat()
+    json.dump({**access_token_info, "expires_at": expires_at}, path.open("w"))
 
 
 def _read_access_token_info(path: Path) -> dict | None:
@@ -95,7 +102,11 @@ def get_access_token(refresh_token: str, app_id: str, cert_id: str) -> str:
     """
 
     token_info = _read_access_token_info(ACCESS_TOKEN_PATH)
-    if not token_info or token_info["expires_in"] <= ACCESS_TOKEN_REFRESH_THRESHOLD:
+    if (
+        not token_info
+        or datetime.now() - datetime.fromisoformat(token_info["expires_at"])
+        <= ACCESS_TOKEN_REFRESH_THRESHOLD
+    ):
         token_info = _request_access_token_info(refresh_token, app_id, cert_id)
         _write_access_token_info(ACCESS_TOKEN_PATH, token_info)
 
