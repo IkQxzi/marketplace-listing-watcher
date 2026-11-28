@@ -51,6 +51,7 @@ def get_listings_on_loop(
 ) -> None:
     """Retrieve latest listings on a loop, indefinitely."""
     while True:
+        breakpoint()
         listings = searcher.get_latest_listings_and_alert(access_token, bot)
 
         logging.info(f"Sleeping for {polling_interval} seconds.")
@@ -121,12 +122,11 @@ def main(
     if generate:
         if not GEMINI_API_KEY:
             raise ValueError()
-        client = GeminiClient(generate, GEMINI_API_KEY)
+        client = GeminiClient(generate, GEMINI_API_KEY, access_token)
         payload = client.generate_payload()
 
     logging.info("Loaded payload.")
 
-    breakpoint()
     searcher = ListingSearcher(payload, TEMP_ACTIVE_DIR)
 
     bot = DiscordBot(DISCORD_WEBHOOK_URL)

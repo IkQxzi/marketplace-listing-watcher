@@ -428,10 +428,11 @@ class SearchEndpointFilter(SearchEndpointParam):
 
     # ---------- DATE ----------
     item_end_date: DatetimeRange | None = None
-    item_start_date: Annotated[
-        DatetimeRange | None,
-        Field(default=DatetimeRange(lower_bd=datetime.now(tz=UTC))),
-    ]
+    item_start_date: DatetimeRange | None = DatetimeRange(lower_bd=datetime.now(tz=UTC))
+    """
+    If unset, will be set to the current datetime (fetches only new listings).
+    Set to None explicitly to retrieve all listings.
+    """
 
     # ---------- SELLER ----------
     sellers: (
