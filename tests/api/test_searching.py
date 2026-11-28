@@ -3,8 +3,15 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from marketplace_listing_watcher.api import DatetimeRange, ListingSearcher, SearchEndpointPayload
-from marketplace_listing_watcher.api.storage import read_listings_from_path, write_listings_to_data_path
+from marketplace_listing_watcher.api import (
+    DatetimeRange,
+    ListingSearcher,
+    SearchEndpointPayload,
+)
+from marketplace_listing_watcher.api.storage import (
+    read_listings_from_path,
+    write_listings_to_data_path,
+)
 from tests.data.api.payloads import EXAMPLE_EXCL_KWORDS_PAYLOAD_PARAMS
 
 logger = logging.getLogger(__name__)
@@ -117,7 +124,7 @@ def test_only_new_listings_retrieved(
     # Overwrite listings so newest 25% of listings are missing
     # Retain reference listing in file
     write_listings_to_data_path(
-        listings[: reference_listing_ind + 1], save_paths.data_path, append=False
+        listings[: reference_listing_ind + 1], save_paths.data_path, overwrite=True
     )
 
     new_listings = searcher.get_latest_listings_and_alert(access_token)

@@ -42,7 +42,7 @@ def _split_and_lowercase_list_sorted(v: list[str]) -> list[str]:
     sorted_lower = [sub.split(" ") for sub in [s.lower() for s in v]]
 
     # Flatten
-    return [string for row in sorted_lower for string in row]
+    return sorted(string for row in sorted_lower for string in row)
 
 
 def _pipe_join_curly_wrap_sorted(v: list[str]) -> str:
